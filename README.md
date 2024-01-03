@@ -42,11 +42,11 @@ modprobe dm-crypt
 
 If encryption is already set up on the partition and you wish to
 preserve the existing file systems, skip the following command.
-Otherwise, be sure to remember the password. (drink real ale!)
+Otherwise, be sure to remember the password.
 
 cryptsetup -v luksFormat \--type luks2 /dev/nvme0n1p2
 
-(**Note**: Be sure to remember the password. (drink real ale!)
+Note: Be sure to remember the password.
 
 To open the crypt, issue the following command. The word 'crypt' on the
 end represents the name of the crypt. Adjust if desired.
@@ -77,49 +77,41 @@ lvcreate -L 16G vg -n swap
 
 Examples given below assume LVM logical volumes. Adjust as required.
 
+```sh
 fat32: mkfs.fat -n boot -F32 /dev/nvme0n1p1
-
-(Note: Use extreme caution formatting the EFI partition when in a dual
-boot scenario)
-
 xfs: mkfs.xfs -L root /dev/vg/root
-
 btrfs: mkfs.btrfs -L root /dev/vg/root
-
 swap: mkswap -L swap /dev/vg/swap
+```
 
+Note: Use extreme caution formatting the EFI partition when in a dual boot scenario.
 ## Mount the volumes
 
 If btrfs is being used, compression and nodatacow options (mount -o
 compress-force=zstd **nodatacow**/dev/vg/data) need to be specified on
 the mount command for the vm image storage disk (data).
 
+```sh
 mount /dev/vg/root /mnt
-
 mkdir -p /mnt/boot
-
 mount /dev/nvme0n1p1 /mnt/boot zsh
-
 mkdir -p /mnt/virt
-
 mount /dev/vg/virt /mnt/virt
-
 mkdir -p /mnt/home/troy/data
-
 mount /dev/vg/data /mnt/home/troy/data
-
 swapon -L swap
+```
 
-## Install Arch base
+## Install the basics
 
 Consider enabling the testing repos in pacman.conf before running
 pacstrap.
 
-pacstrap /mnt avahi base base-devel bluez dosfstools git intel-ucode
-iw\* iwd\* linux linux-firmware linux-headers lvm2 man mlocate nano
-networkmanager nss-mdns openssh python wget xfsprogs zsh
+```sh
+pacstrap /mnt base base-devel dosfstools git intel-ucode linux linux-firmware linux-headers lvm2 man-db mlocate nano networkmanager nmtui nss-mdns openssh python vim wget zsh
+```
 
-\* - if system will use WiFi
+If system will use WiFi, add the following `iw iwd`
 
 ## Create an /etc/fstab file
 
@@ -182,36 +174,23 @@ bootctl install
 
 ## Create the file \'/boot/loader/entries/arch.conf\'
 
+```sh
+#/boot/loader/entries/arch.conf
+
 title Arch Linux
-
 linux /vmlinuz-linux
-
 initrd /intel-ucode.img
-
 initrd /initramfs-linux.img
-
 options root=/dev/vg/root rw quiet
+```
 
-For encryption, add:
+If using encryption, add the following to the options line:
 
-rd.luks.name=\<UUID\>=crypt rd.luks.options=timeout=0
-rootflags=x-systemd.device-timeout=0
+```sh
+rd.luks.name=\<UUID\>=crypt rd.luks.options=timeout=0 rootflags=x-systemd.device-timeout=0
+```
 
-(**Note**: Use *lsblk -up* to determine the appropriate UUID for the
-encrypted volume, **NOT** the root volume.)
-
-For plymouth silent boot add right after quiet:
-
-quiet splash ~~loglevel=3 rd.udev.log_priority=3
-vt.global_cursor_default=0~~ (still required?)
-
-For hibernation, add:
-
-resume=/dev/vg/swap
-
-For cgroups2, add:
-
-cgroup_no_v1=\"all\"
+**Note**: Use *lsblk -up* to determine the appropriate UUID for the encrypted volume, **NOT** the root volume.
 
 ## Edit the file \'/boot/loader/loader.conf\'
 
