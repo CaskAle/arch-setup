@@ -298,8 +298,7 @@ sudo systemctl --now enable fstrim.timer
 ### Customise **/etc/pacman.conf**
 
 - Enable **color** by un-commenting the appropriate line (#Color)
-- Enable the **testing** and **community-testing** repositories by
-un-commenting them.
+- Enable the **testing** and **community-testing** repositories by un-commenting them.
 - Add the kde-unstable repository just above testing.
 
    ```sh
@@ -328,65 +327,76 @@ mkpkg -i
 ### Do a full system update
 
 ```sh
-yay* -Syyu
+yay -Syyu
 ```
 
-### Configure networking/bluetooth
+### Configure networking
 
-For WiFi:
+- Enable the iwd backend for NetworkManager by creating the
+**/etc/NetworkManager/conf.d/iwd_backend.conf** file.
 
-Install iw and iwd
+   ```sh
+   /etc/NetworkManager/conf.d/iwd_backend.conf
+   
+   [device]  
+   wifi.backend=iwd
+   ```
 
-Enable the iwd backend for NetworkManager by creating the
-/etc/NetworkManager/conf.d/iwd_backend.conf file.
+- To use systemd-resolved for dns, create **/etc/systemd/resolved.conf.d/resolved.conf**
 
-> \[device\]
-> wifi.backend=iwd
+   ```sh
+   /etc/systemd/resolved.conf.d/resolved.conf
+   
+   [Resolve]  
+   LLMNR=no  
+   DNSSEC=no
+   ```
 
-To use systemd-resolved for dns, create
-/etc/systemd/resolved.conf.d/resolved.conf
+- Start services
 
-\[Resolve\]
+   ```sh
+   sudo systemctl --now enable systemd-resolved
+   sudo systemctl --now enable NetworkManager
+   ```
 
-LLMNR=no
+- For mdns (MOVING AWAY FROM THIS)
 
-DNSSEC=no
+  - Edit the file **/etc/nsswitch.conf**
 
-Start services
+    - Add **mdns_minimal [NOTFOUND=return]** before **resolve** on hosts line  
 
-sudo systemctl \--now enable systemd-resolved
+  - Enable Avahi daemon  
+    - sudo systemctl --now enable avahi-daemon
 
-sudo systemctl \--now enable NetworkManager
+- Terminal based network config tool
 
-sudo systemctl \--now enable bluetooth
+  - nmtui
 
-For mdns**(MOVING AWAY FROM THIS)**
+### Bluetooth
 
-Edit the file /etc/nsswitch.conf  
-> Add mdns_minimal \[NOTFOUND=return\] before resolve on hosts line  
-> Enable Avahi daemon  
-> *~~sudo systemctl \--now enable avahi-daemon~~*  
+In order to activate mouse on boot, edit **/etc/bluetooth/main.conf**
 
-#### Terminal based network config tool
+```sh
+/etc/bluetooth/main.conf
 
-`nmtui`
+[Policy]  
+AutoEnable=true
+```
 
-#### Bluetooth
+Enable the bluetooth service
 
-In order to activate mouse on boot, edit /etc/bluetooth/main.conf
-
-\[Policy\]  
-**AutoEnable=true**
+```sh
+sudo systemctl --now enable bluetooth
+```
 
 ### VPN support
 
-### Make makepkg compile to TMP space
+### Customise **/etc/makepkg.conf**
 
 Edit /etc/makepkg.conf
 
-Un-comment \'BUILDDIR=/tmp/makepkg\'
-
-Change COMPRESSZST=(zstd -c -z -q - **\--threads=0**)
+- Un-comment \'BUILDDIR=/tmp/makepkg\'
+- Change COMPRESSZST=(zstd -c -z -q - **\--threads=0**)
 
 ### SSH
 
@@ -532,23 +542,16 @@ yay -S \--needed firefox
 
 ### Nano
 
-Customise \~/.config/nano/nanorc
+- Customise **/etc/nanorc**
+  - set autoindent
+  - set mouse
+  - set linenumbers
+  - include \"/usr/share/nano/\*.nanorc\"
+  - extendsyntax python tabgives \" \"
 
-set autoindent
-
-set mouse
-
-set linenumbers
-
-include \"/usr/share/nano/\*.nanorc\"
-
-extendsyntax python tabgives \" \"
-
-Set nano as default editor over vi
-
-export VISUAL=nano
-
-export EDITOR=nano
+- Set nano as default editor over vi
+  - export VISUAL=nano
+  - export EDITOR=nano
 
 ### Samba
 
@@ -645,23 +648,23 @@ support
 
 ### Power and CPU Management
 
-yay -S \--needed tlp smartmontools thermald powertop cpupower
+yay -S --needed tlp smartmontools thermald powertop cpupower
 
-sudo systemctl \--now enable tlp
+sudo systemctl --now enable tlp
 
-sudo systemctl \--now enable tlp-sleep \*\*\*
+sudo systemctl --now enable tlp-sleep \*\*\*
 
-sudo systemctl \--now enable thermald \*\*\*
+sudo systemctl --now enable thermald \*\*\*
 
-Sudo systemctl \--now enable cpupower
+Sudo systemctl --now enable cpupower
 
 ### LibreOffice
 
-yay -S \--needed libreoffice-fresh libreoffice-fresh-en-gb
+yay -S --needed libreoffice-fresh libreoffice-fresh-en-gb
 
-yay -S \--needed libmythes mythes-en for thesarus
+yay -S --needed libmythes mythes-en for thesarus
 
-yay -S \--needed hunspell hunspell-en_GB hunspell-en_US for spell check
+yay -S --needed hunspell hunspell-en_GB hunspell-en_US for spell check
 
 yay -S \--needed hyphen hyphen-en for hyphenation
 
@@ -673,13 +676,13 @@ Edit /etc/profile.d/libreoffice-fresh.sh to enable QT look and feel
 
 ### KVM/Qemu/Libvirt
 
-yay -S \--needed libvirt qemu virt-manager
+yay -S --needed libvirt qemu virt-manager
 
-yay -S \--needed ovmf to enable EFI in guests
+yay -S --needed ovmf to enable EFI in guests
 
-yay -S \--needed ebtables dnsmasq for the default NAT/DHCP networking.
+yay -S --needed ebtables dnsmasq for the default NAT/DHCP networking.
 
-yay -S \--needed bridge-utils for bridged networking.
+yay -S --needed bridge-utils for bridged networking.
 
 **Enable iommu passthrough** **in **kernel options**:**
 
@@ -694,7 +697,8 @@ Under Video QXL ensure xml looks like:
 
 ram=\"65536\" vram=\"65536\" vgamem=\"65536\"
 
-[https://wiki.archlinux.org/index.php/Libvirt](https://wiki.archlinux.org/index.php/Libvirt#UEFI_Support)
+<https://wiki.archlinux.org/index.php/Libvirt>
+<https://wiki.archlinux.org/index.php/Libvirt#UEFI_Support>
 
 For file sharing with virtio-fs:
 <https://libvirt.org/kbase/virtiofs.html>
