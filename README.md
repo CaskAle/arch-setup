@@ -1,6 +1,6 @@
 ## Troy's Arch Linux Install Guide
 
-### Prepare the install media
+#### Prepare the install media
 
 If needed, create an EFI USB install device.  Download an install image from https://archlinux.org/download/
 
@@ -8,9 +8,9 @@ If needed, create an EFI USB install device.  Download an install image from htt
 dd bs=16M if=archlinux-YYYY.MM.DD-x86_64.iso of=/dev/sdX status=progress && sync
 ```
 
-#### Boot the Arch Linux install media.
+##### Boot the Arch Linux install media.
 
-If a larger console font is needed, issue the following command:
+> If a larger console font is needed, issue the following command:
 
 ``` sh
 setfont latarcyrheb-sun32
@@ -22,7 +22,7 @@ If using WiFi, connect to an access point. Ethernet should connect automatically
 iwctl --passphrase <passphrase> station device connect <SSID>
 ```
 
-### Partition disk for EFI and LVM
+#### Partition disk for EFI and LVM
 
 Ensure that there is an efi boot partition formatted as FAT32 and
 flagged as type \'ef00\'
@@ -33,7 +33,7 @@ Allocate the remaining disk space as a partition of \'8e00 Linux LVM\'
 
 /dev/nvme0n1p2 max
 
-### Encryption
+#### Encryption
 
 If full disk encryption will be used, first:
 
@@ -53,7 +53,7 @@ end represents the name of the crypt. Adjust if desired.
 []{#anchor}cryptsetup open /dev/nvme0n1p2 crypt \--allow-discards
 \--persistent
 
-### LVM Setup Example
+#### LVM Setup Example
 
 If the LVM disks are not yet created, the following commands will
 facilitate. Assuming the crypt was names 'crypt'. Adjust as needed
@@ -77,7 +77,7 @@ lvcreate -L 128G vg -n virt
 lvcreate -L 16G vg -n swap
 ```
 
-### Format the volumes
+#### Format the volumes
 
 Examples given below assume LVM logical volumes. Adjust as required.
 
@@ -92,7 +92,7 @@ btrfs: mkfs.btrfs -L root /dev/vg/root
 
 swap: mkswap -L swap /dev/vg/swap
 
-### Mount the volumes
+#### Mount the volumes
 
 If btrfs is being used, compression and nodatacow options (mount -o
 compress-force=zstd **nodatacow **/dev/vg/data) need to be specified on
@@ -114,7 +114,7 @@ mount /dev/vg/data /mnt/home/troy/data
 
 swapon -L swap
 
-### Install Arch base
+#### Install Arch base
 
 Consider enabling the testing repos in pacman.conf before running
 pacstrap.
@@ -125,7 +125,7 @@ networkmanager nss-mdns openssh python wget xfsprogs zsh
 
 \* - if system will use WiFi
 
-### Create an /etc/fstab file
+#### Create an /etc/fstab file
 
 Alternatively there is a good fstab file located in the arch-setup
 folder on the data filesystem. Be sure to edit the file for accuracy.
@@ -133,18 +133,18 @@ UUIDs will be different after a formating.
 
 genfstab /mnt \>\> /mnt/etc/fstab
 
-### Change to the newly installed root environment
+#### Change to the newly installed root environment
 
 arch-chroot /mnt
 
-### vConsole customisations
+#### vConsole customisations
 
 In order to ensure that the font is a readable size, execute the
 following:
 
 echo FONT=latarcyrheb-sun32 \> /etc/vconsole.conf
 
-### Edit /etc/mkinitcpio.conf
+#### Edit /etc/mkinitcpio.conf
 
 Modules:
 
@@ -166,11 +166,11 @@ If using plymouth:
 
 Insert sd-plymouth between systemd and sd-vconsole
 
-### Build initial RAM filesystem
+#### Build initial RAM filesystem
 
 mkinitcpio -P
 
-### Install a bootloader
+#### Install a bootloader
 
 BIOS:
 
@@ -184,7 +184,7 @@ EFI:
 
 bootctl install
 
-### Create the file \'/boot/loader/entries/arch.conf\'
+#### Create the file \'/boot/loader/entries/arch.conf\'
 
 title Arch Linux
 
@@ -217,7 +217,7 @@ For cgroups2, add:
 
 cgroup_no_v1=\"all\"
 
-### Edit the file \'/boot/loader/loader.conf\'
+#### Edit the file \'/boot/loader/loader.conf\'
 
 #timeout 0
 
@@ -225,13 +225,13 @@ cgroup_no_v1=\"all\"
 
 default arch
 
-### Set root password and shell
+#### Set root password and shell
 
 passwd
 
 chsh -s /bin/zsh
 
-### ***Create*** User
+#### ***Create*** User
 
 Create a new user 'troy'
 
@@ -249,11 +249,11 @@ Create .zshrc link
 
 ln -s /home/troy/data/arch-setup/zsh/.zshrc \~/.zshrc
 
-### Enable sudo for wheel group
+#### Enable sudo for wheel group
 
 *echo** \'**%wheel ALL=(ALL) ALL\' \> /etc/sudoers.d/01_wheel*
 
-### Finish up
+#### Finish up
 
 Exit the chroot environment
 
@@ -275,7 +275,7 @@ reboot
 
 # Customise the new system
 
-### Set the clock
+#### Set the clock
 
 sudo hwclock \--systohc \--utc
 
@@ -283,11 +283,11 @@ sudo timedatectl set-timezone America/Chicago
 
 sudo timedatectl set-ntp true
 
-### Set the hostname
+#### Set the hostname
 
 Sudo hostnamectl set-hostname \<hostname\>
 
-### Set the locale
+#### Set the locale
 
 Edit the /etc/locale.gen file, un-comment en_GB.UTF-8 and en_US.UTF-8
 entries then run:
@@ -296,7 +296,7 @@ sudo locale-gen
 
 sudo localectl set-locale en_GB.UTF-8
 
-### Enable fstrim
+#### Enable fstrim
 
 **Set **kernel** parameters **in loader **to allow discards in the luks
 crypt**
@@ -307,7 +307,7 @@ Enable the fstrim cron job to periodically trim the SSD
 
 sudo systemctl \--now enable fstrim.timer
 
-### Prepare pacman and yay[]{#anchor-1}
+#### Prepare pacman and yay[]{#anchor-1}
 
 Enable **color** by un-commenting the appropriate line (#Color)
 
@@ -335,7 +335,7 @@ Do a full system update
 
 *yay* -Syyu
 
-### Configure networking/bluetooth
+#### Configure networking/bluetooth
 
 For WiFi:
 
@@ -389,7 +389,7 @@ In order to activate mouse on boot, edit /etc/bluetooth/main.conf
 
 **AutoEnable=true**
 
-### Make makepkg compile to TMP space
+#### Make makepkg compile to TMP space
 
 Edit /etc/makepkg.conf
 
@@ -397,7 +397,7 @@ Un-comment \'BUILDDIR=/tmp/makepkg\'
 
 Change COMPRESSZST=(zstd -c -z -q - **\--threads=0**)
 
-### SSH
+#### SSH
 
 For kde wallet storing of key passwords:
 
@@ -434,7 +434,7 @@ systemctl \--user enable ssh-agent **(as a user, not root)**
 Add the ssh preload script "\~/data/arch-setup/ssh/ssh-add.sh" to the
 kde autostarts.
 
-### Audio/Video
+#### Audio/Video
 
 yay -S \--needed alsa-utils alsa-plugins pulseaudio pulseaudio-alsa
 pulseaudio-bluetooth
@@ -463,7 +463,7 @@ Modules: Add intel_agp and i915
 
 Create or copy /etc/modprobe.d/intel.conf
 
-### KDE/Plasma
+#### KDE/Plasma
 
 Install plasma
 
@@ -493,7 +493,7 @@ Scale Method = Accurate
 Setting volumes with kmix one time will fix the audio issues around
 notification sounds. Not sure,but I think it fixes microphone as well.
 
-### Fonts
+#### Fonts
 
 Install terminess font for larger console font
 
@@ -519,27 +519,27 @@ Disable the use of embedded bitmap fonts
 
 cp \~/data/arch-setup/font/custom/99-no-embedded.conf /etc/fonts/conf.d
 
-### Firmware updates
+#### Firmware updates
 
 yay -S fwupd
 
-### Java JDK
+#### Java JDK
 
 yay -S \--needed jdk13-openjdk openjdk13-doc
 
-### CloudStation
+#### CloudStation
 
 yay -U arch/builds/synology-cloud-station-drive/synology\*.xz
 
-### Firefox
+#### Firefox
 
 yay -S \--needed firefox
 
-### Chrome/Chromium
+#### Chrome/Chromium
 
-### ZSH
+#### ZSH
 
-### Nano
+#### Nano
 
 Customise \~/.config/nano/nanorc
 
@@ -559,7 +559,7 @@ export VISUAL=nano
 
 export EDITOR=nano
 
-### Samba
+#### Samba
 
 yay -S \--needed samba
 
@@ -600,7 +600,7 @@ sudo systemctl \--now enable smb
 Still need to look into proper password synchronisation between linux
 and samba
 
-### Yubikey
+#### Yubikey
 
 yay -S \--needed libu2f-host to enable reading the device
 
@@ -617,7 +617,7 @@ root:cccccckbdftk:ccccccjekvfu
 
 <https://fedoraproject.org/wiki/Using_Yubikeys_with_Fedora>
 
-### Plymouth
+#### Plymouth
 
 yay -S \--needed plymouth-git
 
@@ -651,7 +651,7 @@ cp /usr/share/plymouth/arch-logo.png
 
 <https://wiki.archlinux.org/index.php/Plymouth>
 
-### Printing and Scanning
+#### Printing and Scanning
 
 yay -S \--needed cups hplip python-pyqt5 python-reportlab python-pillow
 rpcbind sane
@@ -663,14 +663,14 @@ sudo hp-setup
 Uncomment hpaio from the bottom of /etc/sane.d/dll.conf for scanner
 support
 
-### Dell 9360 Tweaks
+#### Dell 9360 Tweaks
 
 Blacklist psmouse to eliminate errors. Create or copy
 /etc/modprobe.d/psmouse.conf
 
 blacklist psmouse
 
-### Power and CPU Management
+#### Power and CPU Management
 
 yay -S \--needed tlp smartmontools thermald powertop cpupower
 
@@ -682,7 +682,7 @@ sudo systemctl \--now enable thermald \*\*\*
 
 Sudo systemctl \--now enable cpupower
 
-### LibreOffice
+#### LibreOffice
 
 yay -S \--needed libreoffice-fresh libreoffice-fresh-en-gb
 
@@ -698,7 +698,7 @@ Enable Java under LibreOffice/Advanced
 
 Edit /etc/profile.d/libreoffice-fresh.sh to enable QT look and feel
 
-### KVM/Qemu/Libvirt
+#### KVM/Qemu/Libvirt
 
 yay -S \--needed libvirt qemu virt-manager
 
@@ -727,7 +727,7 @@ ram=\"65536\" vram=\"65536\" vgamem=\"65536\"
 For file sharing with virtio-fs:
 <https://libvirt.org/kbase/virtiofs.html>
 
-### VMWare Host                                                                                                                                                                     
+#### VMWare Host                                                                                                                                                                     
 
 yay -S vmware-workstation\* (kept locally in \~/vmdata/aur)
 
@@ -747,7 +747,7 @@ sudo systemctl \--now enable vmware-networks
 
 sudo systemctl \--now enable vmware-usbarbitrator
 
-### VMWare Guest
+#### VMWare Guest
 
 Install open-vm-tools in the guest
 
@@ -767,15 +767,15 @@ add the following to /etc/fstab:
 
 (May require fuse3 as well)
 
-### BeerSmith
+#### BeerSmith
 
 yay -U \~/vmdata/aur/beersmith/BeerSmith\*.xz
 
-### DVD Ripping
+#### DVD Ripping
 
 yay -S handbrake libdvdcss dvd+rw-tools libx264
 
-### Flatpak Installs
+#### Flatpak Installs
 
 yay -S flatpak
 
@@ -784,7 +784,7 @@ yay -S flatpak
 -   slack
 -   mumble
 
-### Installed stuff
+#### Installed stuff
 
 -   ansible
 -   visual-studio-code-bin
@@ -792,11 +792,11 @@ yay -S flatpak
 -   latte-dock-git
 -   kmix
 
-### Other Interesting Packages 
+#### Other Interesting Packages 
 
 smplayer, k3b, cdrdao, audex, docker, podman, reflector
 
-### Things to look up
+#### Things to look up
 
 Java fonts look funny.
 
