@@ -114,7 +114,7 @@ pacstrap /mnt base base-devel git intel-ucode linux linux-firmware linux-headers
 
 If system will use WiFi, add the following `iw iwd`
 
-## Create an /etc/fstab file
+### Create an /etc/fstab file
 
 Alternatively there is a good fstab file located in the arch-setup
 folder on the data filesystem. Be sure to edit the file for accuracy.
@@ -122,18 +122,18 @@ UUIDs will be different after a formating.
 
 genfstab /mnt \>\> /mnt/etc/fstab
 
-## Change to the newly installed root environment
+### Change to the newly installed root environment
 
 arch-chroot /mnt
 
-## vConsole customisations
+### vConsole customisations
 
 In order to ensure that the font is a readable size, execute the
 following:
 
 echo FONT=latarcyrheb-sun32 \> /etc/vconsole.conf
 
-## Edit /etc/mkinitcpio.conf
+### Edit /etc/mkinitcpio.conf
 
 Modules:
 
@@ -155,13 +155,13 @@ If using plymouth:
 
 Insert sd-plymouth between systemd and sd-vconsole
 
-## Build initial RAM filesystem
+### Build initial RAM filesystem
 
 mkinitcpio -P
 
-## Install a bootloader
+### Install a bootloader
 
-### BIOS
+#### BIOS
 
 ```sh
 pacman -S grub
@@ -169,13 +169,13 @@ grub-install \--recheck /dev/sda
 grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
-### EFI
+#### EFI
 
 ```sh
 bootctl install
 ```
 
-## Create the file: /boot/loader/entries/arch.conf
+### Create the file: /boot/loader/entries/arch.conf
 
 ```sh
 #/boot/loader/entries/arch.conf
@@ -195,7 +195,7 @@ rd.luks.name=\<UUID\>=crypt rd.luks.options=timeout=0 rootflags=x-systemd.device
 
 **Note**: Use *lsblk -up* to determine the appropriate UUID for the encrypted volume, **NOT** the root volume.
 
-## Edit the file: /boot/loader/loader.conf
+### Edit the file: /boot/loader/loader.conf
 
 ```sh
 /boot/loader/loader.conf
@@ -205,7 +205,7 @@ rd.luks.name=\<UUID\>=crypt rd.luks.options=timeout=0 rootflags=x-systemd.device
 default arch
 ```
 
-## Set root password and shell
+### Set root password and shell
 
 passwd
 
@@ -229,11 +229,11 @@ Create .zshrc link
 
 ln -s /home/troy/data/arch-setup/zsh/.zshrc \~/.zshrc
 
-## Enable sudo for wheel group
+### Enable sudo for wheel group
 
 *echo**\'**%wheel ALL=(ALL) ALL\' \> /etc/sudoers.d/01_wheel*
 
-## Finish up
+### Finish up
 
 Exit the chroot environment
 
