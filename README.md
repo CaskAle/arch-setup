@@ -2,13 +2,13 @@
 
 ### Prepare the install media
 
-If needed, create an EFI USB install device.
+If needed, create an EFI USB install device.  Download an install image from https://archlinux.org/download/
 
 ``` sh
-dd bs=16M if=archlinux-YYYY.MM.DD-x86_64.iso of=/dev/sdX && sync
+dd bs=16M if=archlinux-YYYY.MM.DD-x86_64.iso of=/dev/sdX status=progress && sync
 ```
 
-### Boot the Arch Linux install media.
+#### Boot the Arch Linux install media.
 
 If a larger console font is needed, issue the following command:
 
@@ -16,11 +16,10 @@ If a larger console font is needed, issue the following command:
 setfont latarcyrheb-sun32
 ```
 
-If using WiFi, connect to an access point. Ethernet should connect
-automatically.
+If using WiFi, connect to an access point. Ethernet should connect automatically.
 
 ``` sh
-iwcli
+iwctl --passphrase <passphrase> station device connect <SSID>
 ```
 
 ### Partition disk for EFI and LVM
