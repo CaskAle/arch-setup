@@ -1,24 +1,23 @@
 # Troy's Arch Linux Install Guide
 
-## Prepare the install media
+## Prepare and boot the install media
 
-If needed, create an EFI USB install device.  Download an install image from <https://archlinux.org/download/>
+If needed, create an EFI USB install device. Download an install image from <https://archlinux.org/download/>
 
 ```sh
 dd bs=16M if=archlinux-YYYY.MM.DD-x86_64.iso of=/dev/sdX status=progress && sync
 ```
 
-## Boot the Arch Linux install media
-
+Boot from the newly created USB device. **F12** typically brings up the system boot menu.  
 If a larger console font is needed, issue the following command:
 
 ```sh
 setfont latarcyrheb-sun32
 ```
 
-If using WiFi, connect to an access point. Ethernet should connect automatically.
+If using WiFi, connect to an access point. Ethernet should connect automatically
 
-``` sh
+```sh
 iwctl --passphrase <passphrase> station device connect <SSID>
 ```
 
@@ -29,11 +28,11 @@ iwctl --passphrase <passphrase> station device connect <SSID>
 Ensure that there is an efi boot partition formatted as FAT32 and
 flagged as type \'ef00\'
 
->/dev/nvme0n1p2 256M
+`/dev/nvme0n1p2 256M`
 
 Allocate the remaining disk space as a partition of \'8e00 Linux LVM\'
 
-/dev/nvme0n1p2 max
+`/dev/nvme0n1p2 max`
 
 ### Disk Encryption
 
