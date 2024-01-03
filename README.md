@@ -25,46 +25,45 @@ iwctl --passphrase <passphrase> station device connect <SSID>
 
 ### Partition disks
 
-Ensure that there is an **efi** boot partition formatted as FAT32 and flagged as type **ef00**
+Ensure that there is an **efi** boot partition formatted as FAT32 and flagged as type **ef00**. Allocate the remaining disk space as a partition of type **8e00 Linux LVM**
 
-`/dev/nvme0n1p2 256M`
-
-Allocate the remaining disk space as a partition of type **8e00 Linux LVM**
-
-`/dev/nvme0n1p2 max`
+- /dev/nvme0n1p2 256M
+- /dev/nvme0n1p2 max
 
 ### Disk Encryption
 
 If full disk encryption will be used, first:
 
+```sh
 modprobe dm-crypt
+```
 
 If encryption is already set up on the partition and you wish to
-preserve the existing file systems, skip the following command.
-Otherwise, be sure to remember the password.
+preserve the existing file systems, skip the following command. **Be sure to remember the password.**
 
-cryptsetup -v luksFormat \--type luks2 /dev/nvme0n1p2
-
-Note: Be sure to remember the password.
+```sh
+cryptsetup -v luksFormat --type luks2 /dev/nvme0n1p2
+```
 
 To open the crypt, issue the following command. The word 'crypt' on the
 end represents the name of the crypt. Adjust if desired.
 
-`cryptsetup open /dev/nvme0n1p2 crypt \--allow-discards --persistent`
+```sh
+cryptsetup open /dev/nvme0n1p2 crypt \--allow-discards --persistent
+```
 
 ### BTRFS Setup Example
+
+#### Mount the volumes (btrfs)
+
+If btrfs is being used, compression and nodatacow options (mount -o compress-force=zstd **nodatacow**/dev/vg/data) need to be specified on the mount command for the vm image storage disk (data).
 
 ### LVM Setup Example
 
 #### Create the volumes
 
 If the LVM disks are not yet created, the following commands will
-facilitate. Assuming the crypt was names 'crypt'. Adjust as needed
-according to the name given when opening the crypt. If not using
-encryption, the device will be a physical device such as
-'/dev/nvme0n1p2'. The 'vg' is the name of the volume group. The '-n
-xxxx' specifies the name of the logical volume being created. The '-L
-xxG' specifies the size of the logical volume'
+facilitate, assuming the crypt was named 'crypt'. Adjust as needed according to the name given when opening the crypt. If not using encryption, the device will be a physical device such as '/dev/nvme0n1p2'. The 'vg' is the name of the volume group. The '-n xxxx' specifies the name of the logical volume being created. The '-L xxG' specifies the size of the logical volume
 
 ```sh
 pvcreate /dev/mapper/crypt
@@ -77,20 +76,17 @@ lvcreate -L 16G vg -n swap
 
 #### Format the volumes
 
-Examples given below assume LVM logical volumes. Adjust as required.
+Examples given below assume xfs file system. Adjust as required. **Use extreme caution formatting the EFI partition when in a dual boot scenario.**
 
-- **fat32**: mkfs.fat -n boot -F32 /dev/nvme0n1p1
-- **xfs**: mkfs.xfs -L root /dev/vg/root
-- **btrfs**: mkfs.btrfs -L root /dev/vg/root
-- **swap**: mkswap -L swap /dev/vg/swap
+```sh
+mkfs.fat -n boot -F32 /dev/nvme0n1p1
+mkfs.xfs -L root /dev/vg/root
+mkfs.xfs -L data /dev/vg/data
+mkfs.xfs -L virt /dev/vg/virt
+mkswap -L swap /dev/vg/swap
+```
 
-Note: Use extreme caution formatting the EFI partition when in a dual boot scenario.
-
-#### Mount the volumes
-
-If btrfs is being used, compression and nodatacow options (mount -o
-compress-force=zstd **nodatacow**/dev/vg/data) need to be specified on
-the mount command for the vm image storage disk (data).
+#### Mount the volumes (lvm)
 
 ```sh
 mount /dev/vg/root /mnt
@@ -105,59 +101,62 @@ swapon -L swap
 
 ## Install the basics
 
-Consider enabling the testing repos in pacman.conf before running
-pacstrap.
+Enable the **testing** and **community-testing** repositories by
+un-commenting them from **/etc/pacman/conf**
 
 ```sh
 pacstrap /mnt base base-devel git intel-ucode linux linux-firmware linux-headers lvm2 man-db man-pages mlocate nano networkmanager openssh python vim wget zsh
 ```
 
-If system will use WiFi, add the following `iw iwd`
+>Note: If system will use WiFi, add the following packages: `iw iwd`
 
-### Create an /etc/fstab file
+### Create an **/etc/fstab** file
 
-Alternatively there is a good fstab file located in the arch-setup
-folder on the data filesystem. Be sure to edit the file for accuracy.
-UUIDs will be different after a formating.
+Alternatively there is a good fstab file located in the arch-setup folder on the data filesystem. Be sure to edit the file for accuracy. UUIDs will be different after a formatting.
 
-genfstab /mnt \>\> /mnt/etc/fstab
+```sh
+genfstab /mnt >> /mnt/etc/fstab
+```
 
 ### Change to the newly installed root environment
 
+```sh
 arch-chroot /mnt
+```
 
-### vConsole customisations
+### Adjust vconsole (if needed)
 
-In order to ensure that the font is a readable size, execute the
-following:
+In order to ensure that the terminal font is a readable size, execute the following:
 
+```sh
 echo FONT=latarcyrheb-sun32 \> /etc/vconsole.conf
+```
 
-### Edit /etc/mkinitcpio.conf
+### Edit **/etc/mkinitcpio.conf**
 
 Modules:
 
-Add intel_agp and i915
+- Add intel_agp and i915
 
 Hooks:
 
-Replace base and udev with systemd
-
-Add sd-vconsole after systemd
-
-Insert sd-lvm2 between block and filesystems
+- Replace base and udev with systemd
+- Add sd-vconsole after systemd
+- Insert sd-lvm2 between block and filesystems
 
 If using encryption:
 
-Insert sd-encrypt before sd-lvm2
+- Insert sd-encrypt before sd-lvm2
 
 If using plymouth:
 
-Insert sd-plymouth between systemd and sd-vconsole
+- Insert sd-plymouth between systemd and sd-vconsole
 
-### Build initial RAM filesystem
+### Re-build initial RAM filesystem
 
+```sh
 mkinitcpio -P
+```
 
 ### Install a bootloader
 
@@ -175,7 +174,7 @@ grub-mkconfig -o /boot/grub/grub.cfg
 bootctl install
 ```
 
-### Create the file: /boot/loader/entries/arch.conf
+### Create the file: **/boot/loader/entries/arch.conf**
 
 ```sh
 #/boot/loader/entries/arch.conf
@@ -193,9 +192,9 @@ If using encryption, add the following to the options line:
 rd.luks.name=\<UUID\>=crypt rd.luks.options=timeout=0 rootflags=x-systemd.device-timeout=0
 ```
 
-**Note**: Use *lsblk -up* to determine the appropriate UUID for the encrypted volume, **NOT** the root volume.
+>Note: Use **lsblk -up** to determine the appropriate UUID for the encrypted volume, **NOT** the root volume.
 
-### Edit the file: /boot/loader/loader.conf
+### Edit the file: **/boot/loader/loader.conf**
 
 ```sh
 /boot/loader/loader.conf
@@ -207,84 +206,92 @@ default arch
 
 ### Set root password and shell
 
+```sh
 passwd
-
 chsh -s /bin/zsh
+```
 
-## ***Create*** User
+### Create User - troy
 
-Create a new user 'troy'
-
+```sh
 groupadd -f -g 1000 troy
-
 useradd -m -s /bin/zsh -u 1000 -g troy -G wheel troy
-
 passwd troy
+```
 
 Make troy the owner of the directory.
 
-chown -R troy:troy *home*/troy
-
-Create .zshrc link
-
-ln -s /home/troy/data/arch-setup/zsh/.zshrc \~/.zshrc
+```sh
+chown -R troy:troy /home/troy
+```
 
 ### Enable sudo for wheel group
 
-*echo**\'**%wheel ALL=(ALL) ALL\' \> /etc/sudoers.d/01_wheel*
+```sh
+echo '%wheel ALL=(ALL) ALL' > /etc/sudoers.d/00_wheel
+```
 
 ### Finish up
 
 Exit the chroot environment
 
+```sh
 exit
+```  
 
 Unmount filesystems
 
+```sh
 umount /mnt/boot
-
-umount /mnt/home/data
-
-umount /mnt/home
-
+umount /mnt/home/troy/data
+umount /mnt/virt
 umount /mnt
+```
 
 Reboot into the new system
 
+```sh
 reboot
+```
 
 ## Customise the new system
 
 ### Set the clock
 
-sudo hwclock \--systohc \--utc
-
+```sh
+sudo hwclock --systohc --utc
 sudo timedatectl set-timezone America/Chicago
-
 sudo timedatectl set-ntp true
+```
 
 ### Set the hostname
 
-Sudo hostnamectl set-hostname \<hostname\>
+```sh
+sudo hostnamectl hostname <hostname>
+```
 
 ### Set the locale
 
-Edit the /etc/locale.gen file, un-comment en_GB.UTF-8 and en_US.UTF-8
-entries then run:
+- Edit the **/etc/locale.gen** file
+- Un-comment en_GB.UTF-8 and en_US.UTF-8
+- Then run:
 
+```sh
 sudo locale-gen
-
 sudo localectl set-locale en_GB.UTF-8
+```
 
 ### Enable fstrim
 
-Set **kernel** parameters in loader **to allow discards in the luks crypt
+If using encryption, add the following to **kernel** parameters in boot loader to allow discards in the luks crypt
 
-`rd.luks.options=discard`
+- rd.luks.options=discard
 
-Enable the fstrim cron job to periodically trim the SSD
+Enable the fstrim systemd service to periodically trim the SSD
 
-`sudo systemctl \--now enable fstrim.timer`
+```sh
+sudo systemctl --now enable fstrim.timer
+```
 
 ### Prepare pacman and yay
 
@@ -600,29 +607,18 @@ yay -S \--needed plymouth-git
 *quiet splash ~~loglevel=3 rd.udev.log_priority=3
 vt.global_cursor_default=0~~ (no longer required?)*
 
-**Update the HOOKS in /etc/**mkinitcpio.**conf**: **
+Update the HOOKS in: /etc/**mkinitcpio.conf  
+`HOOKS=(base systemd sd-plymouth \[\...\] sd-encrypt \[...\])*`
 
-*HOOKS=(base systemd sd-plymouth \[\...\] sd-encrypt \[...\])*
+Switch to the sddm-plymouth service:  
+`*sudo systemctl disable sddm.service*`  
+`*sudo enable sddm-plymouth.service*`
 
-**S**witch to the sddm-plymouth service:**
+Set/query the default theme  
+`plymouth-set-default-theme -R \<theme\>`
 
-*sudo systemctl disable sddm.service*
-
-*sudo enable sddm-plymouth.service*
-
-**Set/query the default theme**
-
-plymouth-set-default-theme -R \<theme\>
-
-Add the arch logo to spinner theme
-
-cp /usr/share/plymouth/arch-logo.png
-/usr/share/plymouth/themes/spinner/watermark.png
-
-**Rebuild initial RAM disk** after any changes **to the theme**
-
-*mkinitcpio -p linux*
-
+Rebuild initial RAM disk** after any changes to the theme  
+`mkinitcpio -P'  
 <https://wiki.archlinux.org/index.php/Plymouth>
 
 ### Printing and Scanning
@@ -686,10 +682,9 @@ yay -S \--needed bridge-utils for bridged networking.
 
 **iommu_intel*=1*
 
-**Enable nested virtualisation via /etc/modprobe.d/kvm.conf. **Create or
-copy.**
+Enable nested virtualisation via /etc/modprobe.d/kvm.conf.  Create or copy.
 
-*options kvm_intel nested=1*
+`options kvm_intel nested=1*`
 
 Video card needs extra ram configured in guest to get full resolution.
 Under Video QXL ensure xml looks like:
