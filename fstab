@@ -1,0 +1,18 @@
+# Static information about the filesystems.
+# See fstab(5) for details.
+
+# <file system> <dir> <type> <options> <dump> <pass>
+# UUID=741b1f96-ca97-491b-b240-7c6de9355e96 LABEL=root
+/dev/vg/root    /                 btrfs   compress=zstd 0 0
+
+# UUID=E855-5BB7 LABEL=boot
+/dev/nvme0n1p1  /boot             vfat    defaults	    0 2
+
+# UUID=ad429fc4-5462-4259-b121-953a516bb12a LABEL=data
+/dev/vg/data    /home/troy/data   btrfs   compress=zstd 0 0
+
+# UUID=5f8140d2-76c9-476b-9a56-a83514a98500 LABEL=virt
+/dev/vg/virt    /virt             btrfs   nodatacow     0 0
+
+# UUID=dbbbd223-7860-4467-bbc0-6d79d5f9646f LABEL=swap
+/dev/vg/swap    none              swap    defaults      0 0

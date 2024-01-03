@@ -1,0 +1,4 @@
+#! /bin/sh
+export RSYNC_PASSWORD='dragass'
+rsync -av --exclude */lost+found/* hobgoblin.local::NetBackup/hammersmith/data /home/troy
+  

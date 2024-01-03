@@ -1,0 +1,6 @@
+~/.config/autostart/ssh-add.desktop
+
+[Desktop Entry]
+Exec=zsh --extendedglob -c 'ssh-add -q ~/.ssh/id* < /dev/null'
+Name=ssh-add
+Type=Application
