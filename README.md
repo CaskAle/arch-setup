@@ -278,16 +278,15 @@ sudo localectl set-locale en_GB.UTF-8
 
 ### Enable fstrim
 
-**Set **kernel** parameters**in loader **to allow discards in the luks
-crypt**
+Set **kernel** parameters in loader **to allow discards in the luks crypt
 
-*rd.luks.options=discard*
+`rd.luks.options=discard`
 
 Enable the fstrim cron job to periodically trim the SSD
 
-sudo systemctl \--now enable fstrim.timer
+`sudo systemctl \--now enable fstrim.timer`
 
-### Prepare pacman and yay[]{#anchor-1}
+### Prepare pacman and yay
 
 Enable **color** by un-commenting the appropriate line (#Color)
 
@@ -325,7 +324,6 @@ Enable the iwd backend for NetworkManager by creating the
 /etc/NetworkManager/conf.d/iwd_backend.conf file.
 
 > \[device\]
-
 > wifi.backend=iwd
 
 To use systemd-resolved for dns, create
@@ -347,27 +345,23 @@ sudo systemctl \--now enable bluetooth
 
 For mdns**(MOVING AWAY FROM THIS)**
 
-> Edit the file /etc/nsswitch.conf
+Edit the file /etc/nsswitch.conf  
+> Add mdns_minimal \[NOTFOUND=return\] before resolve on hosts line  
+> Enable Avahi daemon  
+> *~~sudo systemctl \--now enable avahi-daemon~~*  
 
-> Add mdns_minimal \[NOTFOUND=return\] before resolve on hosts line
+#### Terminal based network config tool
 
-> Enable Avahi daemon
+`nmtui`
 
-> *~~sudo systemctl \--now enable avahi-daemon~~*
-
-### Terminal based network config tool
-
-**nmtui**
-
-VPN support
-
-yay -S \--needed networkmanager-openconnect networkmanager-openvpn
+#### Bluetooth
 
 In order to activate mouse on boot, edit /etc/bluetooth/main.conf
 
-\[Policy\]
-
+\[Policy\]  
 **AutoEnable=true**
+
+### VPN support
 
 ### Make makepkg compile to TMP space
 
@@ -772,7 +766,7 @@ yay -S flatpak
 - latte-dock-git
 - kmix
 
-### Other Interesting Packages 
+### Other Interesting Packages
 
 smplayer, k3b, cdrdao, audex, docker, podman, reflector
 
