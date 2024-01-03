@@ -49,14 +49,16 @@ To open the crypt, issue the following command. The word 'crypt' on the
 end represents the name of the crypt. Adjust if desired.
 
 ```sh
-cryptsetup open /dev/nvme0n1p2 crypt \--allow-discards --persistent
+cryptsetup open /dev/nvme0n1p2 crypt --allow-discards --persistent
 ```
 
 ### BTRFS Setup Example
 
 #### Mount the volumes (btrfs)
 
-If btrfs is being used, compression and nodatacow options (mount -o compress-force=zstd **nodatacow**/dev/vg/data) need to be specified on the mount command for the vm image storage disk (data).
+If btrfs is being used, compression and nodatacow options need to be specified on the mount command for the virt storage disk.
+
+- mount -o compress=zstd **nodatacow**/dev/vg/virt
 
 ### LVM Setup Example
 
@@ -219,7 +221,7 @@ useradd -m -s /bin/zsh -u 1000 -g troy -G wheel troy
 passwd troy
 ```
 
-Make troy the owner of the directory.
+Make troy the owner of the **/home/troy** directory.
 
 ```sh
 chown -R troy:troy /home/troy
@@ -270,7 +272,7 @@ sudo timedatectl set-ntp true
 sudo hostnamectl hostname <hostname>
 ```
 
-### Set the locale
+### Set the locale to British English
 
 - Edit the **/etc/locale.gen** file
 - Un-comment en_GB.UTF-8 and en_US.UTF-8
@@ -293,33 +295,41 @@ Enable the fstrim systemd service to periodically trim the SSD
 sudo systemctl --now enable fstrim.timer
 ```
 
-### Prepare pacman and yay
+### Customise **/etc/pacman.conf**
 
-Enable **color** by un-commenting the appropriate line (#Color)
-
-Enable the **testing** and **community-testing** repositories by
+- Enable **color** by un-commenting the appropriate line (#Color)
+- Enable the **testing** and **community-testing** repositories by
 un-commenting them.
+- Add the kde-unstable repository just above testing.
 
-Add the kde-unstable repository just above testing.
+   ```sh
+   [kde-unstable]
+   Include = /etc/pacman.d/mirrorlist
+   ```
 
-\[kde-unstable\]
-
-Include = /etc/pacman.d/mirrorlist
-
-Update pacman mirrors by running the script. If the file
+- Update pacman mirrors by running the script. If the file
 /etc/pacman.d/mirrorlist.tta looks good, move it into production.
 
-arch-setup/updatemirrors
+   ```sh
+   sudo arch-setup/updatemirrors
+   sudo mv /etc/pacman.d/mirrorlist.tta /etc/pacman.d/mirrorlist`
+   ```
 
-mv /etc/pacman.d/mirrorlist.tta /etc/pacman.d/mirrorlist
+### Install yay from AUR
 
-Install the yay tool from
+```sh
+mkdir ~/aur
+cd aur
+git clone https://aur.archlinux.org/yay.git
+cd yay
+mkpkg -i
+```
 
-sudo pacman -U \~/data/aur/yay/yay-9.4.6-2-x86_64.pkg.tar.xz
+### Do a full system update
 
-Do a full system update
-
-*yay* -Syyu
+```sh
+yay* -Syyu
+```
 
 ### Configure networking/bluetooth
 
@@ -574,9 +584,9 @@ usermod -a -G sambashare troy
 
 pdbedit -a -u troy
 
-sudo systemctl \--now enable nmb
+sudo systemctl --now enable nmb
 
-sudo systemctl \--now enable smb
+sudo systemctl --now enable smb
 
 Still need to look into proper password synchronisation between linux
 and samba
@@ -600,7 +610,7 @@ root:cccccckbdftk:ccccccjekvfu
 
 ### Plymouth
 
-yay -S \--needed plymouth-git
+yay -S --needed plymouth-git
 
 **Set **kernel options for quiet boot**:**
 
@@ -632,13 +642,6 @@ sudo hp-setup
 
 Uncomment hpaio from the bottom of /etc/sane.d/dll.conf for scanner
 support
-
-### Dell 9360 Tweaks
-
-Blacklist psmouse to eliminate errors. Create or copy
-/etc/modprobe.d/psmouse.conf
-
-blacklist psmouse
 
 ### Power and CPU Management
 
@@ -696,46 +699,6 @@ ram=\"65536\" vram=\"65536\" vgamem=\"65536\"
 For file sharing with virtio-fs:
 <https://libvirt.org/kbase/virtiofs.html>
 
-### VMWare Hypervisor
-
-yay -S vmware-workstation\* (kept locally in \~/vmdata/aur)
-
-Blacklist KVM via /etc/modprobe.d/kvm_blacklist.conf (Optional)
-
-blacklist kvm
-
-blacklist kvm_intel
-
-Edit \~/.vmware/preferences to include
-
-mks.gl.allowBlacklistedDrivers = \"TRUE\"
-
-Enable systemd service files
-
-sudo systemctl \--now enable vmware-networks
-
-sudo systemctl \--now enable vmware-usbarbitrator
-
-### VMWare Guest
-
-Install open-vm-tools in the guest
-
-gtkmm3 is required on the guest for copy/paste and drag/drop
-
-To get persistent GNOME double scaling (not as root)
-
-gsettings set org.gnome.desktop.interface scaling-factor 2 (default = 0)
-
-To share files,
-
-create /vmware folder in guest as root
-
-add the following to /etc/fstab:
-
-.host:/ /vmware fuse.vmhgfs-fuse defaults,allow_other 0 0
-
-(May require fuse3 as well)
-
 ### BeerSmith
 
 yay -U \~/vmdata/aur/beersmith/BeerSmith\*.xz
@@ -753,28 +716,15 @@ yay -S flatpak
 - slack
 - mumble
 
-### Installed stuff
-
-- ansible
-- visual-studio-code-bin
-- powertop
-- latte-dock-git
-- kmix
-
 ### Other Interesting Packages
 
 smplayer, k3b, cdrdao, audex, docker, podman, reflector
 
 ### Things to look up
 
-Java fonts look funny.
-
-Password not working with yubikey enabled on kde lock screen.
-
-Bridging with libvirt.
-
-Intel GPU on libvirt
-
-Password synchronisation between linux and samba
-
-Do I need to include fsck and fstab parms for xsf & vfat filesystems???
+- Java fonts look funny.
+- Password not working with yubikey enabled on kde lock screen.
+- Bridging with libvirt.
+- Intel GPU on libvirt
+- Password synchronisation between linux and samba
+- Do I need to include fsck and fstab parms for xsf & vfat filesystems???
