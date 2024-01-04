@@ -1,7 +1,7 @@
 path=(~/.local/bin $path)
 export PATH
 
-HISTFILE=~/.histfile
+HISTFILE=~/.zsh_history
 HISTSIZE=1000
 SAVEHIST=1000
 
@@ -36,6 +36,7 @@ ZSH_AUTOSUGGEST_USE_ASYNC="true"
 
 #source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+
 if [ $commands[oc] ]; then
   source <(oc completion zsh)
   compdef _oc oc

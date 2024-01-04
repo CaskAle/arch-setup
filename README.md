@@ -1,8 +1,10 @@
 # Troy's Arch Linux Install Guide
 
+The official install guige can be found at <https://wiki.archlinux.org/title/Installation_guide>
+
 ## Prepare and boot the install media
 
-If needed, create an EFI USB install device. Download an install image from <https://archlinux.org/download/>
+If needed, create an EFI USB install device. Download an install image from <https://archlinux.org/download>
 
 ```sh
 dd bs=16M if=archlinux-YYYY.MM.DD-x86_64.iso of=/dev/sdX status=progress && sync
@@ -58,7 +60,7 @@ cryptsetup open /dev/nvme0n1p2 crypt --allow-discards --persistent
 
 If btrfs is being used, compression and nodatacow options need to be specified on the mount command for the virt storage disk.
 
-- mount -o compress=zstd **nodatacow**/dev/vg/virt
+- mount -o compress=zstd **nodatacow** /dev/vg/virt
 
 ### LVM Setup Example
 
@@ -91,13 +93,10 @@ mkswap -L swap /dev/vg/swap
 #### Mount the volumes (lvm)
 
 ```sh
-mount /dev/vg/root /mnt
-mkdir -p /mnt/boot
-mount /dev/nvme0n1p1 /mnt/boot zsh
-mkdir -p /mnt/virt
-mount /dev/vg/virt /mnt/virt
-mkdir -p /mnt/home/troy/data
-mount /dev/vg/data /mnt/home/troy/data
+mount --mkdir /dev/vg/root /mnt
+mount --mkdir /dev/nvme0n1p1 /mnt/boot zsh
+mount --mkdir /dev/vg/virt /mnt/virt
+mount --mkdir /dev/vg/data /mnt/home/troy/data
 swapon -L swap
 ```
 
@@ -107,7 +106,7 @@ Enable the **testing** and **community-testing** repositories by
 un-commenting them from **/etc/pacman/conf**
 
 ```sh
-pacstrap /mnt base base-devel git intel-ucode linux linux-firmware linux-headers lvm2 man-db man-pages mlocate nano networkmanager openssh python vim wget zsh
+pacstrap /mnt base base-devel git intel-ucode linux linux-firmware linux-headers lvm2 man-db man-pages mlocate nano networkmanager openssh python reflector vim wget zsh
 ```
 
 >Note: If system will use WiFi, add the following packages: `iw iwd`
@@ -117,7 +116,7 @@ pacstrap /mnt base base-devel git intel-ucode linux linux-firmware linux-headers
 Alternatively there is a good fstab file located in the arch-setup folder on the data filesystem. Be sure to edit the file for accuracy. UUIDs will be different after a formatting.
 
 ```sh
-genfstab /mnt >> /mnt/etc/fstab
+genfstab /mnt > /mnt/etc/fstab
 ```
 
 ### Change to the newly installed root environment
@@ -131,7 +130,7 @@ arch-chroot /mnt
 In order to ensure that the terminal font is a readable size, execute the following:
 
 ```sh
-echo FONT=latarcyrheb-sun32 \> /etc/vconsole.conf
+echo FONT=latarcyrheb-sun32 > /etc/vconsole.conf
 ```
 
 ### Edit **/etc/mkinitcpio.conf**
@@ -166,7 +165,7 @@ mkinitcpio -P
 
 ```sh
 pacman -S grub
-grub-install \--recheck /dev/sda
+grub-install --recheck /dev/sda
 grub-mkconfig -o /boot/grub/grub.cfg
 ```
 
@@ -191,7 +190,7 @@ options root=/dev/vg/root rw quiet
 If using encryption, add the following to the options line:
 
 ```sh
-rd.luks.name=\<UUID\>=crypt rd.luks.options=timeout=0 rootflags=x-systemd.device-timeout=0
+rd.luks.name=<UUID>=crypt rd.luks.options=timeout=0 rootflags=x-systemd.device-timeout=0
 ```
 
 >Note: Use **lsblk -up** to determine the appropriate UUID for the encrypted volume, **NOT** the root volume.
@@ -213,18 +212,22 @@ passwd
 chsh -s /bin/zsh
 ```
 
-### Create User - troy
+### Create user - troy
 
 ```sh
 groupadd -f -g 1000 troy
 useradd -m -s /bin/zsh -u 1000 -g troy -G wheel troy
 passwd troy
+chown -R troy:troy /home/troy
 ```
 
-Make troy the owner of the **/home/troy** directory.
+### Create user - ansible
 
 ```sh
-chown -R troy:troy /home/troy
+groupadd -f -g 1001 ansible
+useradd -m -s /bin/zsh -u 1001 -g ansible -G wheel ansible
+passwd ansible
+chown -R ansible:ansible /home/ansible
 ```
 
 ### Enable sudo for wheel group
@@ -275,13 +278,13 @@ sudo hostnamectl hostname <hostname>
 ### Set the locale to British English
 
 - Edit the **/etc/locale.gen** file
-- Un-comment en_GB.UTF-8 and en_US.UTF-8
+- Un-comment **en_GB.UTF-8** and **en_US.UTF-8**
 - Then run:
 
-```sh
-sudo locale-gen
-sudo localectl set-locale en_GB.UTF-8
-```
+   ```sh
+   sudo locale-gen
+   sudo localectl set-locale en_GB.UTF-8
+   ```
 
 ### Enable fstrim
 
@@ -295,7 +298,9 @@ Enable the fstrim systemd service to periodically trim the SSD
 sudo systemctl --now enable fstrim.timer
 ```
 
-### Customise **/etc/pacman.conf**
+### Customise pacman
+
+#### Edit /etc/pacman.conf
 
 - Enable **color** by un-commenting the appropriate line (#Color)
 - Enable the **testing** and **community-testing** repositories by un-commenting them.
@@ -306,13 +311,11 @@ sudo systemctl --now enable fstrim.timer
    Include = /etc/pacman.d/mirrorlist
    ```
 
-- Update pacman mirrors by running the script. If the file
-/etc/pacman.d/mirrorlist.tta looks good, move it into production.
+#### Automate periodic mirrorlist updates
 
-   ```sh
-   sudo arch-setup/updatemirrors
-   sudo mv /etc/pacman.d/mirrorlist.tta /etc/pacman.d/mirrorlist`
-   ```
+```sh
+sudo systemctl --now enable reflector.timer
+```
 
 ### Install yay from AUR
 
@@ -332,45 +335,53 @@ yay -Syyu
 
 ### Configure networking
 
-- Enable the iwd backend for NetworkManager by creating the
-**/etc/NetworkManager/conf.d/iwd_backend.conf** file.
+#### Enable the iwd backend for NetworkManager
 
-   ```sh
-   /etc/NetworkManager/conf.d/iwd_backend.conf
-   
-   [device]  
-   wifi.backend=iwd
+Create the **/etc/NetworkManager/conf.d/iwd_backend.conf** file.
+
+```sh
+/etc/NetworkManager/conf.d/iwd_backend.conf
+
+[device]  
+wifi.backend=iwd
+```
+
+#### Enable systemd-resolvd for dns
+
+Create **/etc/systemd/resolved.conf.d/resolved.conf**
+
+```sh
+/etc/systemd/resolved.conf.d/resolved.conf
+
+[Resolve]  
+LLMNR=no  
+DNSSEC=no
+```
+
+#### Start network services
+
+```sh
+sudo systemctl --now enable systemd-resolved
+sudo systemctl --now enable NetworkManager
+```
+
+#### Avahi and mdns (MOVING AWAY FROM THIS)
+
+- Edit the file **/etc/nsswitch.conf**
+
+- Add **mdns_minimal [NOTFOUND=return]** before **resolve** on hosts line  
+
+- Enable Avahi daemon
+
+   ```sh  
+   sudo systemctl --now enable avahi-daemon
    ```
 
-- To use systemd-resolved for dns, create **/etc/systemd/resolved.conf.d/resolved.conf**
+#### Connect using terminal based network config tool
 
-   ```sh
-   /etc/systemd/resolved.conf.d/resolved.conf
-   
-   [Resolve]  
-   LLMNR=no  
-   DNSSEC=no
-   ```
-
-- Start services
-
-   ```sh
-   sudo systemctl --now enable systemd-resolved
-   sudo systemctl --now enable NetworkManager
-   ```
-
-- For mdns (MOVING AWAY FROM THIS)
-
-  - Edit the file **/etc/nsswitch.conf**
-
-    - Add **mdns_minimal [NOTFOUND=return]** before **resolve** on hosts line  
-
-  - Enable Avahi daemon  
-    - sudo systemctl --now enable avahi-daemon
-
-- Terminal based network config tool
-
-  - nmtui
+```sh
+sudo nmtui
+```
 
 ### Bluetooth
 
@@ -395,8 +406,8 @@ sudo systemctl --now enable bluetooth
 
 Edit /etc/makepkg.conf
 
-- Un-comment \'BUILDDIR=/tmp/makepkg\'
-- Change COMPRESSZST=(zstd -c -z -q - **\--threads=0**)
+- Un-comment **BUILDDIR=/tmp/makepkg**
+- att **--threads=0** to **COMPRESSZST=(zstd -c -z -q -)**
 
 ### SSH
 
