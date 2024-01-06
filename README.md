@@ -10,17 +10,20 @@ If needed, create an EFI USB install device. Download an install image from <htt
 dd bs=16M if=archlinux-YYYY.MM.DD-x86_64.iso of=/dev/sdX status=progress && sync
 ```
 
-Boot from the newly created USB device. **F12** typically brings up the system boot menu.  
-If a larger console font is needed, issue the following command:
+Boot from the newly created USB device. **F12** typically brings up the system boot menu.
+If a larger console font is needed, edit (e) the boot option and append the following:
 
 ```sh
-setfont latarcyrheb-sun32
+fbcon=font:TER16x32
 ```
 
 If using WiFi, connect to an access point. Ethernet should connect automatically
 
 ```sh
-iwctl --passphrase <passphrase> station device connect <SSID>
+iwctl device list
+iwctl station <device> scan
+iwctl station <device> get-networks
+iwctl station <device> connect <SSID>
 ```
 
 ## Disk Setup
@@ -113,8 +116,6 @@ pacstrap /mnt base base-devel git intel-ucode linux linux-firmware linux-headers
 
 ### Create an **/etc/fstab** file
 
-Alternatively there is a good fstab file located in the arch-setup folder on the data filesystem. Be sure to edit the file for accuracy. UUIDs will be different after a formatting.
-
 ```sh
 genfstab /mnt > /mnt/etc/fstab
 ```
@@ -130,28 +131,28 @@ arch-chroot /mnt
 In order to ensure that the terminal font is a readable size, execute the following:
 
 ```sh
-echo FONT=latarcyrheb-sun32 > /etc/vconsole.conf
+echo FONT=TER16x32 > /etc/vconsole.conf
 ```
 
 ### Edit **/etc/mkinitcpio.conf**
 
 Modules:
 
-- Add intel_agp and i915
+- Add **intel_agp** and **i915**
 
 Hooks:
 
-- Replace base and udev with systemd
-- Add sd-vconsole after systemd
-- Insert sd-lvm2 between block and filesystems
+- Replace **base** and **udev** with **systemd**
+- Add **sd-vconsole** after **systemd**
+- Insert **sd-lvm2** between **block** and **filesystems**
 
 If using encryption:
 
-- Insert sd-encrypt before sd-lvm2
+- Insert **sd-encrypt** before **sd-lvm2**
 
 If using plymouth:
 
-- Insert sd-plymouth between systemd and sd-vconsole
+- Insert **sd-plymouth** between **systemd** and **sd-vconsole**
 
 ### Re-build initial RAM filesystem
 
@@ -198,7 +199,7 @@ rd.luks.name=<UUID>=crypt rd.luks.options=timeout=0 rootflags=x-systemd.device-t
 ### Edit the file: **/boot/loader/loader.conf**
 
 ```sh
-/boot/loader/loader.conf
+#/boot/loader/loader.conf
 
 #timeout 0
 #console-mode keep
@@ -234,6 +235,8 @@ chown -R ansible:ansible /home/ansible
 
 ```sh
 echo '%wheel ALL=(ALL) ALL' > /etc/sudoers.d/00_wheel
+echo 'troy ALL=(ALL) ALL' > /etc/sudoers.d/00_troy
+echo 'ansible ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/00_ansible
 ```
 
 ### Finish up
@@ -242,7 +245,7 @@ Exit the chroot environment
 
 ```sh
 exit
-```  
+```
 
 Unmount filesystems
 
@@ -321,10 +324,10 @@ sudo systemctl --now enable reflector.timer
 
 ```sh
 mkdir ~/aur
-cd aur
+cd ~/aur
 git clone https://aur.archlinux.org/yay.git
-cd yay
-mkpkg -i
+cd ~/aur/yay
+mkpkg -si
 ```
 
 ### Do a full system update
@@ -340,9 +343,9 @@ yay -Syyu
 Create the **/etc/NetworkManager/conf.d/iwd_backend.conf** file.
 
 ```sh
-/etc/NetworkManager/conf.d/iwd_backend.conf
+#/etc/NetworkManager/conf.d/iwd_backend.conf
 
-[device]  
+[device]
 wifi.backend=iwd
 ```
 
@@ -351,29 +354,29 @@ wifi.backend=iwd
 Create **/etc/systemd/resolved.conf.d/resolved.conf**
 
 ```sh
-/etc/systemd/resolved.conf.d/resolved.conf
+#/etc/systemd/resolved.conf.d/resolved.conf
 
-[Resolve]  
-LLMNR=no  
+[Resolve]
+LLMNR=no
 DNSSEC=no
 ```
 
 #### Start network services
 
 ```sh
-sudo systemctl --now enable systemd-resolved
-sudo systemctl --now enable NetworkManager
+sudo systemctl --now enable systemd-resolved.service
+sudo systemctl --now enable NetworkManager.service
 ```
 
 #### Avahi and mdns (MOVING AWAY FROM THIS)
 
 - Edit the file **/etc/nsswitch.conf**
 
-- Add **mdns_minimal [NOTFOUND=return]** before **resolve** on hosts line  
+- Add **mdns_minimal [NOTFOUND=return]** before **resolve** on hosts line
 
 - Enable Avahi daemon
 
-   ```sh  
+   ```sh
    sudo systemctl --now enable avahi-daemon
    ```
 
@@ -388,9 +391,9 @@ sudo nmtui
 In order to activate mouse on boot, edit **/etc/bluetooth/main.conf**
 
 ```sh
-/etc/bluetooth/main.conf
+#/etc/bluetooth/main.conf
 
-[Policy]  
+[Policy]
 AutoEnable=true
 ```
 
@@ -631,18 +634,18 @@ yay -S --needed plymouth-git
 *quiet splash ~~loglevel=3 rd.udev.log_priority=3
 vt.global_cursor_default=0~~ (no longer required?)*
 
-Update the HOOKS in: /etc/**mkinitcpio.conf  
+Update the HOOKS in: /etc/**mkinitcpio.conf
 `HOOKS=(base systemd sd-plymouth \[\...\] sd-encrypt \[...\])*`
 
-Switch to the sddm-plymouth service:  
-`*sudo systemctl disable sddm.service*`  
+Switch to the sddm-plymouth service:
+`*sudo systemctl disable sddm.service*`
 `*sudo enable sddm-plymouth.service*`
 
-Set/query the default theme  
+Set/query the default theme
 `plymouth-set-default-theme -R \<theme\>`
 
-Rebuild initial RAM disk** after any changes to the theme  
-`mkinitcpio -P'  
+Rebuild initial RAM disk** after any changes to the theme
+`mkinitcpio -P'
 <https://wiki.archlinux.org/index.php/Plymouth>
 
 ### Printing and Scanning
