@@ -320,6 +320,13 @@ sudo systemctl --now enable fstrim.timer
 sudo systemctl --now enable reflector.timer
 ```
 
+### Customise makepkg
+
+Edit /etc/makepkg.conf
+
+- Un-comment **BUILDDIR=/tmp/makepkg**
+- att **--threads=0** to **COMPRESSZST=(zstd -c -z -q -)**
+
 ### Install yay from AUR
 
 ```sh
@@ -404,13 +411,6 @@ sudo systemctl --now enable bluetooth
 ```
 
 ### VPN support
-
-### Customise **/etc/makepkg.conf**
-
-Edit /etc/makepkg.conf
-
-- Un-comment **BUILDDIR=/tmp/makepkg**
-- att **--threads=0** to **COMPRESSZST=(zstd -c -z -q -)**
 
 ### SSH
 
