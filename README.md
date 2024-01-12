@@ -152,7 +152,7 @@ If using encryption:
 
 If using plymouth:
 
-- Insert **sd-plymouth** between **systemd** and **sd-vconsole**
+- Insert **plymouth** between **systemd** and **sd-vconsole**
 
 ### Re-build initial RAM filesystem
 
@@ -291,15 +291,11 @@ sudo hostnamectl hostname <hostname>
 
 ### Enable fstrim
 
-If using encryption, add the following to **kernel** parameters in boot loader to allow discards in the luks crypt
+If using encryption, add the following to **kernel** parameters in boot loader to allow discards in the luks crypt:  
+`rd.luks.options=discard`
 
-- rd.luks.options=discard
-
-Enable the fstrim systemd service to periodically trim the SSD
-
-```sh
-sudo systemctl --now enable fstrim.timer
-```
+Enable the fstrim systemd service to periodically trim the SSD:  
+`sudo systemctl --now enable fstrim.timer`
 
 ### Customise pacman
 
@@ -508,6 +504,27 @@ Scale Method = Accurate
 Setting volumes with kmix one time will fix the audio issues around
 notification sounds. Not sure,but I think it fixes microphone as well.
 
+### Plymouth
+
+Install:  
+`yay -S --needed plymouth plymouth-kcm breeze-plymouth`
+
+Add kernel options:  
+`quiet splash`
+
+Update the HOOKS in: **/etc/mkinitcpio.conf**:  
+`HOOKS=(base systemd plymouth ...)`
+
+Rebuild initram:  
+`sudo mkinitcpio -P`
+
+Set/query the default theme:  
+`plymouth-set-default-theme -R \<theme\>`  
+or use kde settings app.
+
+Rebuild initial RAM disk after any changes to the theme:  
+`mkinitcpio -P <https://wiki.archlinux.org/index.php/Plymouth>`
+
 ### Fonts
 
 Install terminess font for larger console font
@@ -536,7 +553,11 @@ cp \~/data/arch-setup/font/custom/99-no-embedded.conf /etc/fonts/conf.d
 
 ### Firmware updates
 
-yay -S fwupd
+Install:  
+`yay -S fwupd`
+
+Get Updates:  
+`fwupdmgr get-updates`
 
 ## Java JDK
 
@@ -624,29 +645,6 @@ troy:cccccckbdftk:ccccccjekvfu\
 root:cccccckbdftk:ccccccjekvfu
 
 <https://fedoraproject.org/wiki/Using_Yubikeys_with_Fedora>
-
-### Plymouth
-
-yay -S --needed plymouth-git
-
-**Set **kernel options for quiet boot**:**
-
-*quiet splash ~~loglevel=3 rd.udev.log_priority=3
-vt.global_cursor_default=0~~ (no longer required?)*
-
-Update the HOOKS in: /etc/**mkinitcpio.conf
-`HOOKS=(base systemd sd-plymouth \[\...\] sd-encrypt \[...\])*`
-
-Switch to the sddm-plymouth service:
-`*sudo systemctl disable sddm.service*`
-`*sudo enable sddm-plymouth.service*`
-
-Set/query the default theme
-`plymouth-set-default-theme -R \<theme\>`
-
-Rebuild initial RAM disk** after any changes to the theme
-`mkinitcpio -P'
-<https://wiki.archlinux.org/index.php/Plymouth>
 
 ### Printing and Scanning
 
