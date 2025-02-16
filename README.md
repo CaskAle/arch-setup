@@ -1,116 +1,153 @@
-# Troy's Arch Linux Install Guide
+# Troy's Opinionated Arch Linux Install Guide
 
-The official install guige can be found at <https://wiki.archlinux.org/title/Installation_guide>
+This guide will provide a minimal install of Archlinux.  It provides relevant links to the appropriate official installation and wiki information.  The official install guide can be found at <https://wiki.archlinux.org/title/Installation_guide>.
 
-## Prepare and boot the install media
+## Initial Setup
 
-If needed, create an EFI USB install device. Download an install image from <https://archlinux.org/download>
+### Prepare and boot the install media
+
+If needed, create an EFI USB install device. The official images can be downloaded from <https://archlinux.org/download>.  Once downloaded, there are many tools to create a bootable USB disk from the downloaded image.  This guide prefers the **dd** utility.  The following example will demonstrate:
 
 ```zsh
-dd bs=16M if=archlinux-YYYY.MM.DD-x86_64.iso of=/dev/sdX status=progress && sync
+# Download the image
+wget https://dfw.mirror.rackspace.com/archlinux/iso/YYYY.MM.DD/archlinux-YYYY.MM.DD-x86_64.iso
+
+# List devices for image copy
+lsblk -fp
+
+#Create the install media
+sudo dd bs=16M if=archlinux-YYYY.MM.DD-x86_64.iso of=/dev/sdX status=progress && sync
 ```
 
-Boot from the newly created USB device. **F12** typically brings up the system boot menu.
-If a larger console font is needed, edit (e) the boot option and append the following:
+- Replace the 'YYYY.MM.DD' with the appropriate date for the image you download.
+- Replace 'of=/dev/sdX' with the appropriate device name determined from the execution of the "lsblk" command.
+- The **dd** command is very powerful and will overwrite whatever destination (of) that is given.  Be very careful and double check your typing.
+- For VM install, skip the creation of USB disk and install direct from ISO.
+
+Now that you have an installation media, simply boot your computer from the this media.  Pressing the **F12** key during the initial boot splash screen typically brings up the system boot menu and you can select the installation media from there.
+
+### Make the terminal usable
 
 ```zsh
-fbcon=font:TER16x32
+# If you need a larger font due to High DPI, 
+fbcon=font:TER132b
 ```
 
-If using WiFi, connect to an access point. Ethernet should connect automatically
+### Make sure that the system is in UEFI mode  
+
+```Zsh
+# If this command returns 64 or 32 then you are in UEFI
+cat /sys/firmware/efi/fw_platform_size 
+```
+
+### Get a network connection
+
+If using wired ethernet you should should connect automatically.  If you need a WiFI connection, use the following:
 
 ```zsh
+# List WiFi devices
 iwctl device list
+
+# Scan for networks on the appropriate device (no output)
 iwctl station <device> scan
+
+# List the networks (SSIDs) on the device
 iwctl station <device> get-networks
+
+# Connect to a network
 iwctl station <device> connect <SSID>
+
+# Verify a connection
+ping archlinux.org
 ```
 
-## Disk Setup
+## Prepare the Disks
 
-### Partition disks
+### Partitioning
 
-Ensure that there is an **efi** boot partition formatted as FAT32 and flagged as type **ef00**. Allocate the remaining disk space as a partition of type **8e00 Linux LVM**
+- Ensure that the partition table uses GPT format
+- Ensure that there is an **efi** partition formatted as FAT32 and flagged as type **efi**. Allocate the remaining disk space as a partition of type **Linux Filesystem**
 
-- /dev/nvme0n1p2 1G
-- /dev/nvme0n1p2 max
-
-### Disk Encryption
-
-If full disk encryption will be used, first:
+| Number | Type | Size |
+| --- | --- | --- |
+| 1 | EFI | 1 Gb |
+| 2 | Linux Filesystem | max (all of the remaining space) |  
 
 ```zsh
+# Determine appropriate device to work with
+lsblk -fp
+
+#Replace XXX with device you wish to partition
+fdisk /dev/XXX
+
+# Set partition table to GPT
+g
+
+# Create new efi partition
+n
+default
+default
++1G
+t
+1
+
+# Create new Linux Filesystem partition
+n
+default
+default
+default
+
+
+# Verify your work
+p
+
+# If all is good, write the changes
+w
+
+# If not you can quit without saving and redo from the beginning
+q
+```
+
+### Encryption
+
+If full disk encryption will be used:
+
+```zsh
+# Initialize the dm-crypt module
 modprobe dm-crypt
+
+# If encryption is already set up on the partition and you wish to preserve the existing file systems, skip the following command. 
+
+# Setup the crypt.  The device should be your root filesystem created above.
+cryptsetup -v luksFormat --type luks2 /dev/XXX
+
+# To open the crypt.  The word 'crypt' represents the name of the crypt. Adjust if desired.
+cryptsetup open /dev/XXX crypt --allow-discards --persistent
 ```
 
-If encryption is already set up on the partition and you wish to
-preserve the existing file systems, skip the following command. **Be sure to remember the password.**
-
-```zsh
-cryptsetup -v luksFormat --type luks2 /dev/nvme0n1p2
-```
-
-To open the crypt, issue the following command. The word 'crypt' on the
-end represents the name of the crypt. Adjust if desired.
-
-```zsh
-cryptsetup open /dev/nvme0n1p2 crypt --allow-discards --persistent
-```
-
-### BTRFS Setup Example
-
-#### Mount the volumes (btrfs)
+### Mount the volumes
 
 If btrfs is being used, compression and nodatacow options need to be specified on the mount command for the virt storage disk.
 
 - mount -o compress=zstd **nodatacow** /dev/vg/virt
 
-### LVM Setup Example
-
-#### Create the volumes
-
-If the LVM disks are not yet created, the following commands will
-facilitate, assuming the crypt was named 'crypt'. Adjust as needed according to the name given when opening the crypt. If not using encryption, the device will be a physical device such as '/dev/nvme0n1p2'. The 'vg' is the name of the volume group. The '-n xxxx' specifies the name of the logical volume being created. The '-L xxG' specifies the size of the logical volume
-
-```zsh
-pvcreate /dev/mapper/crypt
-vgcreate vg /dev/mapper/crypt
-lvcreate -L 32G vg -n root
-lvcreate -L 64G vg -n data
-lvcreate -L 128G vg -n virt
-lvcreate -L 16G vg -n swap
-```
-
-#### Format the volumes
+### Format the volumes
 
 Examples given below assume btrfs file system. Adjust as required. **Use extreme caution formatting the EFI partition when in a dual boot scenario.**
 
 ```zsh
-mkfs.fat -n boot -F32 /dev/nvme0n1p1
-mkfs.btrfs -L root /dev/vg/root
-mkfs.btrfs -L data /dev/vg/data
-mkfs.btrfs -L virt /dev/vg/virt
+mkfs.fat -n boot -F32 /dev/XXX
+mkfs.btrfs -L root /dev/XXX
 ```
 
-#### Mount the volumes (lvm)
-
-```zsh
-mount --mkdir /dev/vg/root /mnt
-mount --mkdir /dev/nvme0n1p1 /mnt/boot
-mount --mkdir /dev/vg/virt /mnt/virt
-mount --mkdir /dev/vg/data /mnt/home/troy/data
-```
-
-## Install the basics
+## Install the Minimal System
 
 Enable the **testing** and **community-testing** repositories by
 un-commenting them from **/etc/pacman/conf**
 
 ```zsh
-pacstrap /mnt base base-devel git intel-ucode linux linux-firmware linux-headers lvm2 man-db man-pages mlocate nano networkmanager openssh python reflector vim wget zsh
+pacstrap /mnt base base-devel git intel-ucode iw iwd linux linux-firmware linux-headers man-db man-pages micro nano networkmanager openssh plocate python reflector zsh
 ```
-
->Note: If system will use WiFi, add the following packages: `iw iwd`
 
 ### Create an **/etc/fstab** file
 
@@ -458,7 +495,7 @@ yay -S \--needed plasma plasma-wayland-session
 
 Install kde apps
 
-yay -S dolphin kate kdialog kfind khelpcenter konsole kdegraphics-thumbnailers 
+yay -S dolphin kate kdialog kfind khelpcenter konsole kdegraphics-thumbnailers
 kwalletmanager kwallet kaccounts-integration kaccounts-providers
 kio-extras signon-kwallet-extension ksystemlog ffmpegthumbs phonon-qt6-vlc
 
