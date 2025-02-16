@@ -6,20 +6,20 @@ The official install guige can be found at <https://wiki.archlinux.org/title/Ins
 
 If needed, create an EFI USB install device. Download an install image from <https://archlinux.org/download>
 
-```sh
+```zsh
 dd bs=16M if=archlinux-YYYY.MM.DD-x86_64.iso of=/dev/sdX status=progress && sync
 ```
 
 Boot from the newly created USB device. **F12** typically brings up the system boot menu.
 If a larger console font is needed, edit (e) the boot option and append the following:
 
-```sh
+```zsh
 fbcon=font:TER16x32
 ```
 
 If using WiFi, connect to an access point. Ethernet should connect automatically
 
-```sh
+```zsh
 iwctl device list
 iwctl station <device> scan
 iwctl station <device> get-networks
@@ -32,28 +32,28 @@ iwctl station <device> connect <SSID>
 
 Ensure that there is an **efi** boot partition formatted as FAT32 and flagged as type **ef00**. Allocate the remaining disk space as a partition of type **8e00 Linux LVM**
 
-- /dev/nvme0n1p2 256M
+- /dev/nvme0n1p2 1G
 - /dev/nvme0n1p2 max
 
 ### Disk Encryption
 
 If full disk encryption will be used, first:
 
-```sh
+```zsh
 modprobe dm-crypt
 ```
 
 If encryption is already set up on the partition and you wish to
 preserve the existing file systems, skip the following command. **Be sure to remember the password.**
 
-```sh
+```zsh
 cryptsetup -v luksFormat --type luks2 /dev/nvme0n1p2
 ```
 
 To open the crypt, issue the following command. The word 'crypt' on the
 end represents the name of the crypt. Adjust if desired.
 
-```sh
+```zsh
 cryptsetup open /dev/nvme0n1p2 crypt --allow-discards --persistent
 ```
 
@@ -72,7 +72,7 @@ If btrfs is being used, compression and nodatacow options need to be specified o
 If the LVM disks are not yet created, the following commands will
 facilitate, assuming the crypt was named 'crypt'. Adjust as needed according to the name given when opening the crypt. If not using encryption, the device will be a physical device such as '/dev/nvme0n1p2'. The 'vg' is the name of the volume group. The '-n xxxx' specifies the name of the logical volume being created. The '-L xxG' specifies the size of the logical volume
 
-```sh
+```zsh
 pvcreate /dev/mapper/crypt
 vgcreate vg /dev/mapper/crypt
 lvcreate -L 32G vg -n root
@@ -83,24 +83,22 @@ lvcreate -L 16G vg -n swap
 
 #### Format the volumes
 
-Examples given below assume xfs file system. Adjust as required. **Use extreme caution formatting the EFI partition when in a dual boot scenario.**
+Examples given below assume btrfs file system. Adjust as required. **Use extreme caution formatting the EFI partition when in a dual boot scenario.**
 
-```sh
+```zsh
 mkfs.fat -n boot -F32 /dev/nvme0n1p1
-mkfs.xfs -L root /dev/vg/root
-mkfs.xfs -L data /dev/vg/data
-mkfs.xfs -L virt /dev/vg/virt
-mkswap -L swap /dev/vg/swap
+mkfs.btrfs -L root /dev/vg/root
+mkfs.btrfs -L data /dev/vg/data
+mkfs.btrfs -L virt /dev/vg/virt
 ```
 
 #### Mount the volumes (lvm)
 
-```sh
+```zsh
 mount --mkdir /dev/vg/root /mnt
-mount --mkdir /dev/nvme0n1p1 /mnt/boot zsh
+mount --mkdir /dev/nvme0n1p1 /mnt/boot
 mount --mkdir /dev/vg/virt /mnt/virt
 mount --mkdir /dev/vg/data /mnt/home/troy/data
-swapon -L swap
 ```
 
 ## Install the basics
@@ -108,7 +106,7 @@ swapon -L swap
 Enable the **testing** and **community-testing** repositories by
 un-commenting them from **/etc/pacman/conf**
 
-```sh
+```zsh
 pacstrap /mnt base base-devel git intel-ucode linux linux-firmware linux-headers lvm2 man-db man-pages mlocate nano networkmanager openssh python reflector vim wget zsh
 ```
 
@@ -116,13 +114,13 @@ pacstrap /mnt base base-devel git intel-ucode linux linux-firmware linux-headers
 
 ### Create an **/etc/fstab** file
 
-```sh
-genfstab /mnt > /mnt/etc/fstab
+```zsh
+genfstab -U /mnt > /mnt/etc/fstab
 ```
 
 ### Change to the newly installed root environment
 
-```sh
+```zsh
 arch-chroot /mnt
 ```
 
@@ -130,7 +128,7 @@ arch-chroot /mnt
 
 In order to ensure that the terminal font is a readable size, execute the following:
 
-```sh
+```zsh
 echo FONT=TER16x32 > /etc/vconsole.conf
 ```
 
@@ -156,29 +154,19 @@ If using plymouth:
 
 ### Re-build initial RAM filesystem
 
-```sh
+```zsh
 mkinitcpio -P
 ```
 
-### Install a bootloader
+### Install systemd bootloader
 
-#### BIOS
-
-```sh
-pacman -S grub
-grub-install --recheck /dev/sda
-grub-mkconfig -o /boot/grub/grub.cfg
-```
-
-#### EFI
-
-```sh
+```zsh
 bootctl install
 ```
 
 ### Create the file: **/boot/loader/entries/arch.conf**
 
-```sh
+```zsh
 #/boot/loader/entries/arch.conf
 
 title Arch Linux
@@ -190,7 +178,7 @@ options root=/dev/vg/root rw quiet
 
 If using encryption, add the following to the options line:
 
-```sh
+```zsh
 rd.luks.name=<UUID>=crypt rd.luks.options=timeout=0 rootflags=x-systemd.device-timeout=0
 ```
 
@@ -198,7 +186,7 @@ rd.luks.name=<UUID>=crypt rd.luks.options=timeout=0 rootflags=x-systemd.device-t
 
 ### Edit the file: **/boot/loader/loader.conf**
 
-```sh
+```zsh
 #/boot/loader/loader.conf
 
 #timeout 0
@@ -208,24 +196,24 @@ default arch
 
 ### Set root password and shell
 
-```sh
+```zsh
 passwd
 chsh -s /bin/zsh
 ```
 
 ### Create user - troy
 
-```sh
+```zsh
 groupadd -f -g 1000 troy
 useradd -m -s /bin/zsh -u 1000 -g troy -G wheel troy
 passwd troy
 chown -R troy:troy /home/troy
 ```
 
-### Create user - ansible
+### Create user - ansible ans set initial password to 'ansible'
 
-```sh
-groupadd -f -g 1001 ansible
+```zsh
+groupadd -f -g 999 ansible
 useradd -m -s /bin/zsh -u 1001 -g ansible -G wheel ansible
 passwd ansible
 chown -R ansible:ansible /home/ansible
@@ -233,7 +221,7 @@ chown -R ansible:ansible /home/ansible
 
 ### Enable sudo for wheel group
 
-```sh
+```zsh
 echo '%wheel ALL=(ALL) ALL' > /etc/sudoers.d/00_wheel
 echo 'troy ALL=(ALL) ALL' > /etc/sudoers.d/00_troy
 echo 'ansible ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/00_ansible
@@ -243,13 +231,13 @@ echo 'ansible ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/00_ansible
 
 Exit the chroot environment
 
-```sh
+```zsh
 exit
 ```
 
 Unmount filesystems
 
-```sh
+```zsh
 umount /mnt/boot
 umount /mnt/home/troy/data
 umount /mnt/virt
@@ -258,7 +246,7 @@ umount /mnt
 
 Reboot into the new system
 
-```sh
+```zsh
 reboot
 ```
 
@@ -266,7 +254,7 @@ reboot
 
 ### Set the clock
 
-```sh
+```zsh
 sudo hwclock --systohc --utc
 sudo timedatectl set-timezone America/Chicago
 sudo timedatectl set-ntp true
@@ -274,7 +262,7 @@ sudo timedatectl set-ntp true
 
 ### Set the hostname
 
-```sh
+```zsh
 sudo hostnamectl hostname <hostname>
 ```
 
@@ -284,7 +272,7 @@ sudo hostnamectl hostname <hostname>
 - Un-comment **en_GB.UTF-8** and **en_US.UTF-8**
 - Then run:
 
-   ```sh
+   ```zsh
    sudo locale-gen
    sudo localectl set-locale en_GB.UTF-8
    ```
@@ -305,14 +293,14 @@ Enable the fstrim systemd service to periodically trim the SSD:
 - Enable the **testing** and **community-testing** repositories by un-commenting them.
 - Add the kde-unstable repository just above testing.
 
-   ```sh
+   ```zsh
    [kde-unstable]
    Include = /etc/pacman.d/mirrorlist
    ```
 
 #### Automate periodic mirrorlist updates
 
-```sh
+```zsh
 sudo systemctl --now enable reflector.timer
 ```
 
@@ -321,31 +309,30 @@ sudo systemctl --now enable reflector.timer
 Edit /etc/makepkg.conf
 
 - Un-comment **BUILDDIR=/tmp/makepkg**
-- att **--threads=0** to **COMPRESSZST=(zstd -c -z -q -)**
 
 ### Install yay from AUR
 
-```sh
+```zsh
 mkdir ~/aur
 cd ~/aur
 git clone https://aur.archlinux.org/yay.git
-cd ~/aur/yay
+cd yay
 mkpkg -si
 ```
 
 ### Do a full system update
 
-```sh
+```zsh
 yay -Syyu
 ```
 
 ### Configure networking
 
-#### Enable the iwd backend for NetworkManager
+#### Enable the iwd backend for NetworkManager  (Note: wpa 3 not working under iwd)
 
 Create the **/etc/NetworkManager/conf.d/iwd_backend.conf** file.
 
-```sh
+```zsh
 #/etc/NetworkManager/conf.d/iwd_backend.conf
 
 [device]
@@ -356,7 +343,7 @@ wifi.backend=iwd
 
 Create **/etc/systemd/resolved.conf.d/resolved.conf**
 
-```sh
+```zsh
 #/etc/systemd/resolved.conf.d/resolved.conf
 
 [Resolve]
@@ -366,7 +353,7 @@ DNSSEC=no
 
 #### Start network services
 
-```sh
+```zsh
 sudo systemctl --now enable systemd-resolved.service
 sudo systemctl --now enable NetworkManager.service
 ```
@@ -379,13 +366,13 @@ sudo systemctl --now enable NetworkManager.service
 
 - Enable Avahi daemon
 
-   ```sh
+   ```zsh
    sudo systemctl --now enable avahi-daemon
    ```
 
 #### Connect using terminal based network config tool
 
-```sh
+```zsh
 sudo nmtui
 ```
 
@@ -393,7 +380,7 @@ sudo nmtui
 
 In order to activate mouse on boot, edit **/etc/bluetooth/main.conf**
 
-```sh
+```zsh
 #/etc/bluetooth/main.conf
 
 [Policy]
@@ -402,7 +389,7 @@ AutoEnable=true
 
 Enable the bluetooth service
 
-```sh
+```zsh
 sudo systemctl --now enable bluetooth
 ```
 
@@ -445,28 +432,17 @@ systemctl \--user enable ssh-agent **(as a user, not root)**
 Add the ssh preload script "\~/data/arch-setup/ssh/ssh-add.sh" to the
 kde autostarts.
 
-### Audio/Video
+### Audio/Video (maybe only install pipewire pipewire-jack and wireplumber???)
 
-yay -S \--needed alsa-utils alsa-plugins pulseaudio pulseaudio-alsa
-pulseaudio-bluetooth
-
-Set audio levels (pressing "m" toggles mute on a channel):
-
-sudo alsamixer
-
-For gstreamer:
-
-yay gstreamer-vaapi gst-libav phonon-qt5-gstreamer
+yay -S \--needed pipewire wireplumber
 
 For vlc:
-
-yay vlc phono-qt5-vlc
+yay vlc phonon-qt6-vlc
 
 Intel Video
 
-yay -S \--needed libva-intel-driver (Hardware Video Accelleration)
-
-yay -S \--needed xf86-video-intel (Video Driver)
+yay -S --needed mesa vulkan-intel
+yay -S \--needed libva-intel-driver (Hardware Video Acceleration)
 
 Edit /etc/mkinitcpio.conf
 
@@ -482,14 +458,13 @@ yay -S \--needed plasma plasma-wayland-session
 
 Install kde apps
 
-yay -S dolphin kate kdialog kfind khelpcenter konsole kdegraphics ark
-kwalletmanager kcalc yakuake kaccounts-integration kaccounts-providers
-kio-extras signon-kwallet-extension ksystemlog ffmpegthumbs ktorrent
-phonon-qt5-gstreamer phonon-qt5-vlc
+yay -S dolphin kate kdialog kfind khelpcenter konsole kdegraphics-thumbnailers 
+kwalletmanager kwallet kaccounts-integration kaccounts-providers
+kio-extras signon-kwallet-extension ksystemlog ffmpegthumbs phonon-qt6-vlc
 
 For the kde discover app, the backends are:
 
-packagekit-qt5 (for arch packages)
+packagekit-qt6 (for arch packages)
 
 Enable sddm service
 
@@ -500,9 +475,6 @@ KDE System Settings / Display and Monitor / Compositor
 Rendering backend = OpenGL 3.1
 
 Scale Method = Accurate
-
-Setting volumes with kmix one time will fix the audio issues around
-notification sounds. Not sure,but I think it fixes microphone as well.
 
 ### Plymouth
 

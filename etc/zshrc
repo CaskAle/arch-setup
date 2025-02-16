@@ -1,5 +1,8 @@
 path=(~/.local/bin $path)
 export PATH
+export SSH_AUTH_SOCK=$XDG_RUNTIME_DIR/ssh-agent.socket
+export EDITOR=micro
+export VISUAL=code-insiders
 
 HISTFILE=~/.zsh_history
 HISTSIZE=1000
@@ -42,5 +45,5 @@ if [ $commands[oc] ]; then
   compdef _oc oc
 fi
 
-PROMPT='%(!.%F{red}.%F{magenta})%n%F{green}@%m %F{yellow}[%/]
+PROMPT='%(!.%F{red}.%F{magenta})%n%F{white}@%F{green}%m %F{yellow}[%/]
 %f%# '
