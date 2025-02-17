@@ -69,10 +69,10 @@ ping archlinux.org
 - Ensure that there is a 1Gb **efi** partition formatted as FAT32 and flagged as type **efi**. 
 - Allocate the remaining disk space as a partition of type **Linux Filesystem**
 
-| Number | Type | Size |
-| --- | --- | --- |
-| 1 | EFI | 1 Gb |
-| 2 | Linux Filesystem | max (all of the remaining space) |  
+| Number | Type             | Size                             |
+| ------ | ---------------- | -------------------------------- |
+| 1      | EFI              | 1 Gb                             |
+| 2      | Linux Filesystem | max (all of the remaining space) |  
 
 ```zsh
 # Determine the appropriate device to work with.
