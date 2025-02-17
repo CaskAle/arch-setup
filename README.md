@@ -16,11 +16,11 @@ wget https://dfw.mirror.rackspace.com/archlinux/iso/YYYY.MM.DD/archlinux-YYYY.MM
 lsblk -fp
 
 #Create the install media.
-sudo dd bs=16M if=archlinux-YYYY.MM.DD-x86_64.iso of=/dev/xxx status=progress && sync
+sudo dd bs=16M if=archlinux-YYYY.MM.DD-x86_64.iso of=/dev/sda status=progress && sync
 ```
 
 - Replace the 'YYYY.MM.DD' with the appropriate date for the image you download.
-- Replace 'of=/dev/sdX' with the appropriate device name determined from the execution of the "lsblk" command.
+- Replace 'of=/dev/sda' with the appropriate device name determined from the execution of the "lsblk" command.
 - The **dd** command is very powerful and will overwrite whatever destination (of) that is given.  Be very careful and double check your typing.
 - For VM install, skip the creation of USB disk and install direct from ISO.
 
@@ -66,7 +66,7 @@ ping archlinux.org
 ### Partitioning
 
 - Ensure that the partition table uses GPT format.
-- Ensure that there is a 1Gb **efi** partition formatted as FAT32 and flagged as type **efi**. 
+- Ensure that there is a 1Gb **efi** partition formatted as FAT32 and flagged as type **efi**.
 - Allocate the remaining disk space as a partition of type **Linux Filesystem**
 
 | Number | Type             | Size                             |
@@ -78,8 +78,9 @@ ping archlinux.org
 # Determine the appropriate device to work with.
 lsblk -fp
 
-#Replace xxx with the device you wish to partition.
-fdisk /dev/xxx
+# Replace xxx with the device you wish to partition.
+# In my case, /dev/nvme0n1
+fdisk /dev/nvme0n1
 
 # Set the partition table to GPT.
 g
@@ -116,13 +117,13 @@ Skip this section if you are not enabling full disk encryption.
 # Initialize the dm-crypt module.
 modprobe dm-crypt
 
-# If encryption is already set up on the partition and you wish to preserve the existing file systems, skip the following command which initializes the crypt. The device should be your root filesystem created above.
+# If encryption is already set up on the partition and you wish to preserve the existing file systems, skip the following command which initializes the crypt. The device should be your root filesystem created above. # In my case, /dev/nvme0n1p2
 
-cryptsetup -v luksFormat --type luks2 /dev/xxx
+cryptsetup -v luksFormat --type luks /dev/nvme0n1p2
 
 # To open the crypt.  The word 'crypt' represents the name of the crypt. Adjust if desired.
 
-cryptsetup open /dev/xxx crypt --allow-discards --persistent
+cryptsetup open /dev/nvme0n1p2 crypt --allow-discards --persistent
 ```
 
 ### Format the volumes
@@ -133,17 +134,17 @@ Examples given below assume btrfs file system. Adjust as required. Optional inst
 
 ```zsh
 # Format the EFI partition as fat32 (label = boot).
-mkfs.fat -n boot -F32 /dev/xxx
+mkfs.fat -n boot -F32 /dev/nvme0n1p1
 
 # Format the root partition as btrfs (label = root).
-mkfs.btrfs -L root /dev/xxx
+mkfs.btrfs -L root /dev/nvme0n1p2
 ```
 
 ### Mount the volumes
 
 ```zsh
 # Mount root filesystem onto /mnt
-mount -o compress=zstd /dev/xxx /mnt
+mount -o compress=zstd /dev/nvme0n1p2 /mnt
 ```
 
 #### Create btrfs subvolumes
@@ -159,31 +160,29 @@ btrfs subvolume create /mnt/@home
 umount /mnt
 
 # Mount the new root subvolume.
-mount -o compress=zstd,subvol=@ /dev/xxx /mnt
+mount -o compress=zstd,subvol=@ /dev/nvme0n1p2 /mnt
 
 # Create the home directory.
 mkdir -p /mnt/home
 
 # Mount the home subvolume.
-mount -o compress=zstd,subvol=@home /dev/xxx /mnt/home
+mount -o compress=zstd,subvol=@home /dev/nvme0n1p2 /mnt/home
 ```
 
 #### Mount the efi filesystem onto boot
 
 ```zsh
 # Create the boot directory.
-mkdir -p /mnt/efi
+mkdir -p /mnt/boot
 
 # Mount the efi filesystem.
-mount /dev/xxx /mnt/boot
+mount /dev/nvme0n1p1 /mnt/boot
 ```
 
 ## Install the Minimal System
 
-Enable the **testing** and **community-testing** repositories by un-commenting them from **/etc/pacman/conf**
-
 ```zsh
-pacstrap /mnt base base-devel fwupd git intel-ucode iw iwd linux linux-firmware linux-headers man-db man-pages micro nano networkmanager openssh plocate python reflector sudo vim zsh zsh-autosuggestions zsh-completions
+pacstrap -K /mnt base base-devel btrfs-progs intel-ucode linux linux-firmware linux-headers man-pages micro networkmanager plocate
 ```
 
 ### Create an **/etc/fstab** file
@@ -198,67 +197,62 @@ genfstab -U /mnt > /mnt/etc/fstab
 arch-chroot /mnt
 ```
 
-### Adjust vconsole (if needed)
+#### Adjust vconsole (if needed)
 
-In order to ensure that the terminal font is a readable size, execute the following:
+In order to ensure that the console font is a readable size upon booting into the new system, execute the following.  You should only need to do this if you needed to do it upon initial boot.
 
 ```zsh
-echo FONT=TER16x32 > /etc/vconsole.conf
+echo FONT=TER132B > /etc/vconsole.conf
 ```
 
-### Edit **/etc/mkinitcpio.conf**
+#### Edit **/etc/mkinitcpio.conf**
 
 Modules:
 
-- Add **intel_agp** and **i915**
+- Add **i915**
 
 Hooks:
 
-- Replace **base** and **udev** with **systemd**
-- Add **sd-vconsole** after **systemd**
-- Insert **sd-lvm2** between **block** and **filesystems**
+- Replace base, udev, and resume with systemd
+- Add sd-vconsole after systemd
+- Remove keymap, and consolefont
+- Add microcode afer autodetect
 
 If using encryption:
 
-- Insert **sd-encrypt** before **sd-lvm2**
+- Insert sd-encrypt after systemd-vconsole
 
-If using plymouth:
-
-- Insert **plymouth** between **systemd** and **sd-vconsole**
-
-### Re-build initial RAM filesystem
+#### Re-build initial RAM filesystem
 
 ```zsh
 mkinitcpio -P
 ```
 
-### Install systemd bootloader
+#### Install systemd-boot bootloader
 
 ```zsh
 bootctl install
 ```
 
-### Create the file: **/boot/loader/entries/arch.conf**
+##### Create/Edit the file: /boot/loader/entries/arch.conf
 
 ```zsh
 #/boot/loader/entries/arch.conf
 
 title Arch Linux
 linux /vmlinuz-linux
-initrd /intel-ucode.img
 initrd /initramfs-linux.img
-options root=/dev/vg/root rw quiet
+
+# no encryption
+options root=/dev/nvme0n1p2 rw quiet
+
+# with full disk encryption
+options d.luks.name=<luks-UUID>=crypt root=/dev/mapper/crypt rd.luks.options=timeout=0,discard rootflags=x-systemd.device-timeout=0 rw quiet
 ```
 
-If using encryption, add the following to the options line:
+- Use **lsblk -up** to determine the appropriate UUID for the luks volume, **NOT** the root volume.
 
-```zsh
-rd.luks.name=<UUID>=crypt rd.luks.options=timeout=0 rootflags=x-systemd.device-timeout=0
-```
-
->Note: Use **lsblk -up** to determine the appropriate UUID for the encrypted volume, **NOT** the root volume.
-
-### Edit the file: **/boot/loader/loader.conf**
+##### Create/Edit the file: /boot/loader/loader.conf
 
 ```zsh
 #/boot/loader/loader.conf
@@ -268,14 +262,15 @@ rd.luks.name=<UUID>=crypt rd.luks.options=timeout=0 rootflags=x-systemd.device-t
 default arch
 ```
 
-### Set root password and shell
+#### Enable sudo for wheel group
 
 ```zsh
-passwd
-chsh -s /bin/zsh
+echo '%wheel ALL=(ALL) ALL' > /etc/sudoers.d/00_wheel
 ```
 
-### Create user - troy
+#### Create a user with admin rights (troy)
+
+If you do not set a root passwd, it is imerative that a sudo enabled user be created for administrative (wheel group) access.
 
 ```zsh
 groupadd -f -g 1000 troy
@@ -284,47 +279,76 @@ passwd troy
 chown -R troy:troy /home/troy
 ```
 
-### Create user - ansible and set initial password to 'ansible'
+#### Finish up the chroot configuration
 
 ```zsh
-groupadd -f -g 999 ansible
-useradd -m -s /bin/zsh -u 1001 -g ansible -G wheel ansible
-passwd ansible
-chown -R ansible:ansible /home/ansible
-```
-
-### Enable sudo for wheel group
-
-```zsh
-echo '%wheel ALL=(ALL) ALL' > /etc/sudoers.d/00_wheel
-echo 'troy ALL=(ALL) ALL' > /etc/sudoers.d/00_troy
-echo 'ansible ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/00_ansible
-```
-
-### Finish up
-
-Exit the chroot environment
-
-```zsh
+# Exit the chroot environment.
 exit
 ```
 
-Unmount filesystems
+### Reboot to the new system
 
-```zsh
+```zshrc
+# Unmount filesystems
 umount /mnt/boot
-umount /mnt/home/troy/data
-umount /mnt/virt
 umount /mnt
-```
 
-Reboot into the new system
-
-```zsh
+# Reboot into the new system
 reboot
 ```
 
+Be sure to remove the install media when the shutdown process has completed.
+
 ## Customise the new system
+
+If everything went according to plan, your new, minimal system will come up upon reboot.  As might be expected, this is where the real configuration begins.
+
+### pacman.conf
+
+Because I am a fan of using the testing repos.
+
+```zsh
+
+```
+
+- uncomment testing
+- add kde unstable
+- color
+
+### git
+
+### python
+
+### zsh shell
+
+#### Set root shell
+
+```zsh
+# ensure that root uses zsh.
+sudo chsh -s /bin/zsh
+```
+
+#### Install
+
+- zsh
+- zsh-autosuggestions
+- zsh-completions
+- zsh-autocomplete
+- zsh-syntax-highlighting
+
+#### .zshrc config
+
+### ssh
+
+- install openssh
+- adjust security
+- install keys
+
+### Reflector
+
+- install
+- adjust countries
+- enable timer
 
 ### Set the clock
 
@@ -358,6 +382,10 @@ If using encryption, add the following to **kernel** parameters in boot loader t
 
 Enable the fstrim systemd service to periodically trim the SSD:  
 `sudo systemctl --now enable fstrim.timer`
+
+## Firmware Updates
+
+- Install fwupd
 
 ### Customise pacman
 
@@ -401,6 +429,9 @@ yay -Syyu
 ```
 
 ### Configure networking
+
+- iw
+- iwd
 
 #### Enable the iwd backend for NetworkManager  (Note: wpa 3 not working under iwd)
 
@@ -619,8 +650,6 @@ yay -S \--needed firefox
 
 ### Chrome/Chromium
 
-### ZSH
-
 ### Nano
 
 - Customise **/etc/nanorc**
@@ -780,7 +809,7 @@ yay -S flatpak
 
 ### Other Interesting Packages
 
-smplayer, k3b, cdrdao, audex, docker, podman, reflector
+podman
 
 ### Things to look up
 
