@@ -183,7 +183,7 @@ mount /dev/xxx /mnt/boot
 Enable the **testing** and **community-testing** repositories by un-commenting them from **/etc/pacman/conf**
 
 ```zsh
-pacstrap /mnt base base-devel git intel-ucode iw iwd linux linux-firmware linux-headers man-db man-pages micro nano networkmanager openssh plocate python reflector sudo vim zsh zsh-autosuggestions zsh-completions
+pacstrap /mnt base base-devel fwupd git intel-ucode iw iwd linux linux-firmware linux-headers man-db man-pages micro nano networkmanager openssh plocate python reflector sudo vim zsh zsh-autosuggestions zsh-completions
 ```
 
 ### Create an **/etc/fstab** file
