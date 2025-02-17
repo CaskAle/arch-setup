@@ -9,14 +9,14 @@ This guide will provide a minimal install of Archlinux.  It provides relevant li
 If needed, create an EFI USB install device. The official images can be downloaded from <https://archlinux.org/download>.  Once downloaded, there are many tools to create a bootable USB disk from the downloaded image.  This guide prefers the **dd** utility.  The following example will demonstrate:
 
 ```zsh
-# Download the image
+# Download the image.
 wget https://dfw.mirror.rackspace.com/archlinux/iso/YYYY.MM.DD/archlinux-YYYY.MM.DD-x86_64.iso
 
-# List devices for image copy
+# List devices for image copy.
 lsblk -fp
 
-#Create the install media
-sudo dd bs=16M if=archlinux-YYYY.MM.DD-x86_64.iso of=/dev/sdX status=progress && sync
+#Create the install media.
+sudo dd bs=16M if=archlinux-YYYY.MM.DD-x86_64.iso of=/dev/xxx status=progress && sync
 ```
 
 - Replace the 'YYYY.MM.DD' with the appropriate date for the image you download.
@@ -29,14 +29,14 @@ Now that you have an installation media, simply boot your computer from the this
 ### Make the terminal usable
 
 ```zsh
-# If you need a larger font due to High DPI, 
+# If you need a larger font due to High DPI.
 fbcon=font:TER132b
 ```
 
 ### Make sure that the system is in UEFI mode  
 
 ```Zsh
-# If this command returns 64 or 32 then you are in UEFI
+# If this command returns 64 or 32 then you are in UEFI.
 cat /sys/firmware/efi/fw_platform_size 
 ```
 
@@ -65,8 +65,9 @@ ping archlinux.org
 
 ### Partitioning
 
-- Ensure that the partition table uses GPT format
-- Ensure that there is an **efi** partition formatted as FAT32 and flagged as type **efi**. Allocate the remaining disk space as a partition of type **Linux Filesystem**
+- Ensure that the partition table uses GPT format.
+- Ensure that there is a 1Gb **efi** partition formatted as FAT32 and flagged as type **efi**. 
+- Allocate the remaining disk space as a partition of type **Linux Filesystem**
 
 | Number | Type | Size |
 | --- | --- | --- |
@@ -74,16 +75,16 @@ ping archlinux.org
 | 2 | Linux Filesystem | max (all of the remaining space) |  
 
 ```zsh
-# Determine appropriate device to work with
+# Determine the appropriate device to work with.
 lsblk -fp
 
-#Replace XXX with device you wish to partition
-fdisk /dev/XXX
+#Replace xxx with the device you wish to partition.
+fdisk /dev/xxx
 
-# Set partition table to GPT
+# Set the partition table to GPT.
 g
 
-# Create new efi partition
+# Create the new efi partition.
 n
 default
 default
@@ -91,62 +92,98 @@ default
 t
 1
 
-# Create new Linux Filesystem partition
+# Create the new Linux Filesystem partition.
 n
 default
 default
 default
 
-
-# Verify your work
+# Verify your work.
 p
 
-# If all is good, write the changes
+# If all is good, write the changes.
 w
 
-# If not you can quit without saving and redo from the beginning
+# If not, you can quit without saving and redo from the beginning.
 q
 ```
 
 ### Encryption
 
-If full disk encryption will be used:
+Skip this section if you are not enabling full disk encryption.
 
 ```zsh
-# Initialize the dm-crypt module
+# Initialize the dm-crypt module.
 modprobe dm-crypt
 
-# If encryption is already set up on the partition and you wish to preserve the existing file systems, skip the following command. 
+# If encryption is already set up on the partition and you wish to preserve the existing file systems, skip the following command which initializes the crypt. The device should be your root filesystem created above.
 
-# Setup the crypt.  The device should be your root filesystem created above.
-cryptsetup -v luksFormat --type luks2 /dev/XXX
+cryptsetup -v luksFormat --type luks2 /dev/xxx
 
 # To open the crypt.  The word 'crypt' represents the name of the crypt. Adjust if desired.
-cryptsetup open /dev/XXX crypt --allow-discards --persistent
+
+cryptsetup open /dev/xxx crypt --allow-discards --persistent
+```
+
+### Format the volumes
+
+Examples given below assume btrfs file system. Adjust as required. Optional instructions are included for creating btrfs subvolumes.
+
+**Use extreme caution formatting the EFI partition when in a dual boot scenario.**
+
+```zsh
+# Format the EFI partition as fat32 (label = boot).
+mkfs.fat -n boot -F32 /dev/xxx
+
+# Format the root partition as btrfs (label = root).
+mkfs.btrfs -L root /dev/xxx
 ```
 
 ### Mount the volumes
 
-If btrfs is being used, compression and nodatacow options need to be specified on the mount command for the virt storage disk.
+```zsh
+# Mount root filesystem onto /mnt
+mount -o compress=zstd /dev/xxx /mnt
+```
 
-- mount -o compress=zstd **nodatacow** /dev/vg/virt
+#### Create btrfs subvolumes
 
-### Format the volumes
-
-Examples given below assume btrfs file system. Adjust as required. **Use extreme caution formatting the EFI partition when in a dual boot scenario.**
+Skip this section if you do not want to create btrfs subvolumes.
 
 ```zsh
-mkfs.fat -n boot -F32 /dev/XXX
-mkfs.btrfs -L root /dev/XXX
+# Create the subvolumes.
+btrfs subvolume create /mnt/@
+btrfs subvolume create /mnt/@home
+
+# Unmount the old root filesystem.
+umount /mnt
+
+# Mount the new root subvolume.
+mount -o compress=zstd,subvol=@ /dev/xxx /mnt
+
+# Create the home directory.
+mkdir -p /mnt/home
+
+# Mount the home subvolume.
+mount -o compress=zstd,subvol=@home /dev/xxx /mnt/home
+```
+
+#### Mount the efi filesystem onto boot
+
+```zsh
+# Create the boot directory.
+mkdir -p /mnt/efi
+
+# Mount the efi filesystem.
+mount /dev/xxx /mnt/boot
 ```
 
 ## Install the Minimal System
 
-Enable the **testing** and **community-testing** repositories by
-un-commenting them from **/etc/pacman/conf**
+Enable the **testing** and **community-testing** repositories by un-commenting them from **/etc/pacman/conf**
 
 ```zsh
-pacstrap /mnt base base-devel git intel-ucode iw iwd linux linux-firmware linux-headers man-db man-pages micro nano networkmanager openssh plocate python reflector zsh
+pacstrap /mnt base base-devel git intel-ucode iw iwd linux linux-firmware linux-headers man-db man-pages micro nano networkmanager openssh plocate python reflector sudo vim zsh zsh-autosuggestions zsh-completions
 ```
 
 ### Create an **/etc/fstab** file
@@ -247,7 +284,7 @@ passwd troy
 chown -R troy:troy /home/troy
 ```
 
-### Create user - ansible ans set initial password to 'ansible'
+### Create user - ansible and set initial password to 'ansible'
 
 ```zsh
 groupadd -f -g 999 ansible
