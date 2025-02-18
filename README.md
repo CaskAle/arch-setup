@@ -196,7 +196,7 @@ mount /dev/nvme0n1p1 /mnt/boot
 ## Install the Minimal System
 
 ```zsh
-pacstrap -K /mnt base base-devel btrfs-progs intel-ucode iw iwd linux linux-firmware linux-headers man-pages micro networkmanager plocate python reflector zsh
+pacstrap -K /mnt base base-devel btrfs-progs intel-ucode iw iwd linux linux-firmware linux-headers man-pages micro networkmanager plocate python reflector
 ```
 
 ### Create an **/etc/fstab** file
@@ -345,10 +345,44 @@ sudo hostnamectl hostname <hostname>
 If using disk encryption, verify that the following kernel option exists in /boot/loader/entries/arch.conf to allow discards in the luks crypt:
 `rd.luks.options=discard`
 
-Enable the fstrim systemd service to periodically trim the SSD:
+Enable the fstrim systemd timer to periodically trim the SSD:
 
 ```zsh
 sudo systemctl --now enable fstrim.timer
+```
+
+### Configure networking
+
+#### Enable the iwd backend for NetworkManager  (Note: wpa 3 not working under iwd)
+
+Create the `/etc/NetworkManager/conf.d/iwd_backend.conf` file.
+
+```zsh
+#/etc/NetworkManager/conf.d/iwd_backend.conf
+
+[device]
+wifi.backend=iwd
+```
+
+Configure the systemd-resolved DNS
+
+```zsh
+sudo systemctl stop NetworkManager
+sudo rm /etc/resolv.conf
+sudo ln -sf ../run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+```
+
+Start the services
+
+```zsh
+sudo systemctl enable --now systemd-resolved.service
+sudo systemctl enable --now NetworkManager.service
+```
+
+#### Connect to a WiFi network using terminal based network config tool
+
+```zsh
+sudo nmtui
 ```
 
 ### Reflector will build a customized mirrorlist
@@ -359,13 +393,13 @@ sudo systemctl --now enable fstrim.timer
 --country United States
 ```
 
-#### Enable the timer
+#### Enable the reflector.timer
 
 ```zsh
 sudo systemctl enable --now reflector.timer
 ```
 
-### Customize Pacman
+### Customize Pacman and do system update
 
 #### Edit the /etc/pacman.conf file
 
@@ -380,24 +414,54 @@ sudo systemctl enable --now reflector.timer
    Include = /etc/pacman.d/mirrorlist
    ```
 
-### Configure git
-
-### zsh shell
-
-#### Set root shell
+#### Perform a full system update
 
 ```zsh
-# ensure that root uses zsh.
+sudo pacman -Syyu
+```
+
+### Customise Makepkg
+
+Edit `/etc/makepkg.conf`
+
+- Uncomment `BUILDDIR=/tmp/makepkg`
+
+### Configure Git
+
+Install git
+
+```zsh
+# Install git
+sudo pacman -S git
+
+# Configure user
+git config --global user.email "you@example.com"
+git config --global user.name "Your Name"
+```
+
+### Install yay from AUR
+
+```zsh
+mkdir ~/aur
+cd ~/aur
+git clone https://aur.archlinux.org/yay.git
+cd yay
+mkpkg -si
+```
+
+### Configure Zsh Shell
+
+#### Set root and troy shell to zsh
+
+```zsh
+# ensure that root and troy use zsh shell.
 sudo chsh -s /bin/zsh
+chsh -s /bis/zsh
 ```
 
 #### Install
 
-- zsh
-- zsh-autosuggestions
-- zsh-completions
-- zsh-autocomplete
-- zsh-syntax-highlighting
+sudo pacman -S --needed zsh zsh-autosuggestions zsh-completions zsh-autocomplete zsh-syntax-highlighting
 
 #### .zshrc config
 
@@ -411,81 +475,6 @@ sudo chsh -s /bin/zsh
 ## Firmware Updates
 
 - Install fwupd
-
-### Customise makepkg
-
-Edit /etc/makepkg.conf
-
-- Un-comment **BUILDDIR=/tmp/makepkg**
-
-### Install yay from AUR
-
-```zsh
-mkdir ~/aur
-cd ~/aur
-git clone https://aur.archlinux.org/yay.git
-cd yay
-mkpkg -si
-```
-
-### Do a full system update
-
-```zsh
-yay -Syyu
-```
-
-### Configure networking
-
-- iw
-- iwd
-
-#### Enable the iwd backend for NetworkManager  (Note: wpa 3 not working under iwd)
-
-Create the **/etc/NetworkManager/conf.d/iwd_backend.conf** file.
-
-```zsh
-#/etc/NetworkManager/conf.d/iwd_backend.conf
-
-[device]
-wifi.backend=iwd
-```
-
-#### Enable systemd-resolvd for dns
-
-Create **/etc/systemd/resolved.conf.d/resolved.conf**
-
-```zsh
-#/etc/systemd/resolved.conf.d/resolved.conf
-
-[Resolve]
-LLMNR=no
-DNSSEC=no
-```
-
-#### Start network services
-
-```zsh
-sudo systemctl --now enable systemd-resolved.service
-sudo systemctl --now enable NetworkManager.service
-```
-
-#### Avahi and mdns (MOVING AWAY FROM THIS)
-
-- Edit the file **/etc/nsswitch.conf**
-
-- Add **mdns_minimal [NOTFOUND=return]** before **resolve** on hosts line
-
-- Enable Avahi daemon
-
-   ```zsh
-   sudo systemctl --now enable avahi-daemon
-   ```
-
-#### Connect using terminal based network config tool
-
-```zsh
-sudo nmtui
-```
 
 ### Bluetooth
 
@@ -503,8 +492,6 @@ Enable the bluetooth service
 ```zsh
 sudo systemctl --now enable bluetooth
 ```
-
-### VPN support
 
 ### SSH
 
@@ -642,7 +629,7 @@ Install:
 Get Updates:  
 `fwupdmgr get-updates`
 
-## Java JDK
+### Java JDK
 
 yay -S \--needed jdk13-openjdk openjdk13-doc
 
@@ -668,47 +655,6 @@ yay -S \--needed firefox
 - Set nano as default editor over vi
   - export VISUAL=nano
   - export EDITOR=nano
-
-### Samba
-
-yay -S \--needed samba
-
-edit /etc/samba/smb.conf
-
-Under \[global\]
-
-usershare path = /var/lib/samba/usershare
-
-usershare max shares = 100
-
-usershare allow guests = no
-
-usershare owner only = no
-
-workgroup = BEER
-
-server string = Troy\'s Arch Linux
-
-For shared folders:
-
-mkdir -p /var/lib/samba/usershare
-
-groupadd sambashare
-
-chown root:sambashare /var/lib/samba/usershare
-
-chmod 1770 /var/lib/samba/usershare
-
-usermod -a -G sambashare troy
-
-pdbedit -a -u troy
-
-sudo systemctl --now enable nmb
-
-sudo systemctl --now enable smb
-
-Still need to look into proper password synchronisation between linux
-and samba
 
 ### Yubikey
 
