@@ -119,9 +119,9 @@ modprobe dm-crypt
 
 # If encryption is already set up on the partition and you wish to preserve the existing file systems, skip the following command which initializes the crypt. The device should be your root filesystem created above. # In my case, /dev/nvme0n1p2
 
-cryptsetup -v luksFormat --type luks /dev/nvme0n1p2
+cryptsetup -v luksFormat --type luks2 /dev/nvme0n1p2
 
-# To open the crypt.  The word 'crypt' represents the name of the crypt. Adjust if desired.
+# To open the crypt.  The word 'crypt' represents the name of the encrypted vault. I use 'crypt', adjust if desired.
 
 cryptsetup open /dev/nvme0n1p2 crypt --allow-discards --persistent
 ```
@@ -138,6 +138,10 @@ mkfs.fat -n boot -F32 /dev/nvme0n1p1
 
 # Format the root partition as btrfs (label = root).
 mkfs.btrfs -L root /dev/nvme0n1p2
+
+# Or, if using disk encryption
+mkfs.btrfs -L root /dev/mapper/crypt
+
 ```
 
 ### Mount the volumes
@@ -145,6 +149,9 @@ mkfs.btrfs -L root /dev/nvme0n1p2
 ```zsh
 # Mount root filesystem onto /mnt
 mount -o compress=zstd /dev/nvme0n1p2 /mnt
+
+# or
+mount -o compress=zstd /dev/mapper/crypt /mnt
 ```
 
 #### Create btrfs subvolumes
@@ -162,11 +169,18 @@ umount /mnt
 # Mount the new root subvolume.
 mount -o compress=zstd,subvol=@ /dev/nvme0n1p2 /mnt
 
+# or
+mount -o compress=zstd,subvol=@ /dev/mapper/crypt /mnt
+
 # Create the home directory.
 mkdir -p /mnt/home
 
 # Mount the home subvolume.
 mount -o compress=zstd,subvol=@home /dev/nvme0n1p2 /mnt/home
+
+# or
+mount -o compress=zstd,subvol=@home /dev/mapper/crypt /mnt/home
+
 ```
 
 #### Mount the efi filesystem onto boot
@@ -182,7 +196,7 @@ mount /dev/nvme0n1p1 /mnt/boot
 ## Install the Minimal System
 
 ```zsh
-pacstrap -K /mnt base base-devel btrfs-progs intel-ucode linux linux-firmware linux-headers man-pages micro networkmanager plocate
+pacstrap -K /mnt base base-devel btrfs-progs intel-ucode iw iwd linux linux-firmware linux-headers man-pages micro networkmanager plocate python reflector zsh
 ```
 
 ### Create an **/etc/fstab** file
@@ -202,25 +216,22 @@ arch-chroot /mnt
 In order to ensure that the console font is a readable size upon booting into the new system, execute the following.  You should only need to do this if you needed to do it upon initial boot.
 
 ```zsh
+# Set a console font
 echo FONT=TER132B > /etc/vconsole.conf
+
+# Otherwise, touch /etc/vconsole.conf
+touch /etc/vconsole.conf
 ```
 
 #### Edit **/etc/mkinitcpio.conf**
 
-Modules:
+```zsh
+# Modules. i915 is for intel.  AMD may use alternative.
+MODULES=(i915)
 
-- Add **i915**
-
-Hooks:
-
-- Replace base, udev, and resume with systemd
-- Add sd-vconsole after systemd
-- Remove keymap, and consolefont
-- Add microcode afer autodetect
-
-If using encryption:
-
-- Insert sd-encrypt after systemd-vconsole
+#Hooks.  sd-encrypt is only needed if doing disk encryption
+HOOKS=(systemd systemd-vconsole sd-encrypt autodetect microcode modconf kms keyboard block filesystems fsck)
+```
 
 #### Re-build initial RAM filesystem
 
@@ -243,14 +254,14 @@ title Arch Linux
 linux /vmlinuz-linux
 initrd /initramfs-linux.img
 
-# no encryption
-options root=/dev/nvme0n1p2 rw quiet
+# no encryption.  Only use the subvol rootflag if you created btrfs subvolumes.
+options root=/dev/nvme0n1p2 rootflags=subvol=@ rw quiet
 
-# with full disk encryption
-options d.luks.name=<luks-UUID>=crypt root=/dev/mapper/crypt rd.luks.options=timeout=0,discard rootflags=x-systemd.device-timeout=0 rw quiet
+# with full disk encryption.  Only use the subvol rootflag if you created btrfs subvolumes.
+options rd.luks.name=<luks-UUID>=crypt root=/dev/mapper/crypt rd.luks.options=timeout=0,discard rootflags=x-systemd.device-timeout=0,subvol=@ rw quiet
 ```
 
-- Use **lsblk -up** to determine the appropriate UUID for the luks volume, **NOT** the root volume.
+- Use **lsblk -fp** to determine the appropriate 'luks-UUID' for the luks encrypted device, **NOT** the root volume.
 
 ##### Create/Edit the file: /boot/loader/loader.conf
 
@@ -274,9 +285,8 @@ If you do not set a root passwd, it is imerative that a sudo enabled user be cre
 
 ```zsh
 groupadd -f -g 1000 troy
-useradd -m -s /bin/zsh -u 1000 -g troy -G wheel troy
+useradd -m -u 1000 -g troy -G wheel troy
 passwd troy
-chown -R troy:troy /home/troy
 ```
 
 #### Finish up the chroot configuration
@@ -288,9 +298,10 @@ exit
 
 ### Reboot to the new system
 
-```zshrc
-# Unmount filesystems
+```zsh
+# Unmount the filesystems
 umount /mnt/boot
+umount /mnt/home
 umount /mnt
 
 # Reboot into the new system
@@ -303,21 +314,73 @@ Be sure to remove the install media when the shutdown process has completed.
 
 If everything went according to plan, your new, minimal system will come up upon reboot.  As might be expected, this is where the real configuration begins.
 
-### pacman.conf
-
-Because I am a fan of using the testing repos.
+### Set the clock
 
 ```zsh
-
+sudo hwclock --systohc --utc
+sudo timedatectl set-timezone America/Chicago
+sudo timedatectl set-ntp true
 ```
 
-- uncomment testing
-- add kde unstable
-- color
+### Set the hostname
 
-### git
+```zsh
+sudo hostnamectl hostname <hostname>
+```
 
-### python
+### Set the locale.  I use British English but keep United States as well.
+
+- Edit the /etc/locale.gen file
+- Uncomment `en_GB.UTF-8`
+- Uncomment `en_US.UTF-8`
+- Then run:
+
+   ```zsh
+   sudo locale-gen
+   sudo localectl set-locale en_GB.UTF-8
+   ```
+
+### Enable fstrim
+
+If using disk encryption, verify that the following kernel option exists in /boot/loader/entries/arch.conf to allow discards in the luks crypt:
+`rd.luks.options=discard`
+
+Enable the fstrim systemd service to periodically trim the SSD:
+
+```zsh
+sudo systemctl --now enable fstrim.timer
+```
+
+### Reflector will build a customized mirrorlist
+
+#### Edit the /etc/xdg/reflector/reflector.conf file
+
+```zsh
+--country United States
+```
+
+#### Enable the timer
+
+```zsh
+sudo systemctl enable --now reflector.timer
+```
+
+### Customize Pacman
+
+#### Edit the /etc/pacman.conf file
+
+- Uncomment the `#Color` line.
+- Uncomment the `#ParallelDownloads = 5` line.
+- Uncomment the `[core-testing]` repo section.
+- Uncomment the `[extra-testing]` repo section.
+- Add a new repo for `[kde-unstable]` above the `[core-testing]` repo.
+
+   ```zsh  
+   [kde-unstable]
+   Include = /etc/pacman.d/mirrorlist
+   ```
+
+### Configure git
 
 ### zsh shell
 
@@ -344,67 +407,10 @@ sudo chsh -s /bin/zsh
 - adjust security
 - install keys
 
-### Reflector
-
-- install
-- adjust countries
-- enable timer
-
-### Set the clock
-
-```zsh
-sudo hwclock --systohc --utc
-sudo timedatectl set-timezone America/Chicago
-sudo timedatectl set-ntp true
-```
-
-### Set the hostname
-
-```zsh
-sudo hostnamectl hostname <hostname>
-```
-
-### Set the locale to British English
-
-- Edit the **/etc/locale.gen** file
-- Un-comment **en_GB.UTF-8** and **en_US.UTF-8**
-- Then run:
-
-   ```zsh
-   sudo locale-gen
-   sudo localectl set-locale en_GB.UTF-8
-   ```
-
-### Enable fstrim
-
-If using encryption, add the following to **kernel** parameters in boot loader to allow discards in the luks crypt:  
-`rd.luks.options=discard`
-
-Enable the fstrim systemd service to periodically trim the SSD:  
-`sudo systemctl --now enable fstrim.timer`
 
 ## Firmware Updates
 
 - Install fwupd
-
-### Customise pacman
-
-#### Edit /etc/pacman.conf
-
-- Enable **color** by un-commenting the appropriate line (#Color)
-- Enable the **testing** and **community-testing** repositories by un-commenting them.
-- Add the kde-unstable repository just above testing.
-
-   ```zsh
-   [kde-unstable]
-   Include = /etc/pacman.d/mirrorlist
-   ```
-
-#### Automate periodic mirrorlist updates
-
-```zsh
-sudo systemctl --now enable reflector.timer
-```
 
 ### Customise makepkg
 
