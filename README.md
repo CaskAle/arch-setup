@@ -196,7 +196,7 @@ mount /dev/nvme0n1p1 /mnt/boot
 ## Install the Minimal System
 
 ```zsh
-pacstrap -K /mnt base base-devel btrfs-progs intel-ucode iw iwd linux linux-firmware linux-headers man-pages micro networkmanager plocate python reflector
+pacstrap -K /mnt base base-devel btrfs-progs intel-ucode iw iwd linux linux-firmware linux-headers man-pages micro networkmanager openssh plocate python reflector
 ```
 
 ### Create an **/etc/fstab** file
@@ -303,16 +303,26 @@ exit
 umount /mnt/boot
 umount /mnt/home
 umount /mnt
+```
 
 # Reboot into the new system
+
+```zsh
 reboot
 ```
 
-Be sure to remove the install media when the shutdown process has completed.
+Besure to remove the install media when the shutdown process has completed.
 
 ## Customise the new system
 
 If everything went according to plan, your new, minimal system will come up upon reboot.  As might be expected, this is where the real configuration begins.
+
+### The sooner ssh is available, the sooner we can use ansible
+
+- install openssh
+- adjust security
+- install keys
+
 
 ### Set the clock
 
@@ -433,10 +443,12 @@ Install git
 ```zsh
 # Install git
 sudo pacman -S git
+sudo pacman -S --asdeps git-zsh-completion
 
 # Configure user
 git config --global user.email "you@example.com"
 git config --global user.name "Your Name"
+git config --global init.default.Branch main
 ```
 
 ### Install yay from AUR
@@ -446,46 +458,25 @@ mkdir ~/aur
 cd ~/aur
 git clone https://aur.archlinux.org/yay.git
 cd yay
-mkpkg -si
+makepkg -si
 ```
 
 ### Configure Zsh Shell
 
-#### Set root and troy shell to zsh
-
 ```zsh
-# ensure that root and troy use zsh shell.
+# Install
+sudo pacman -S --needed zsh zsh-autosuggestions zsh-completions zsh-autocomplete zsh-syntax-highlighting
+
+# Ensure that root and troy use zsh shell.
 sudo chsh -s /bin/zsh
 chsh -s /bis/zsh
 ```
 
-#### Install
-
-sudo pacman -S --needed zsh zsh-autosuggestions zsh-completions zsh-autocomplete zsh-syntax-highlighting
-
-#### .zshrc config
-
-### ssh
-
-- install openssh
-- adjust security
-- install keys
-
-
-## Firmware Updates
-
-- Install fwupd
+#### Configure .zshrc
 
 ### Bluetooth
 
-In order to activate mouse on boot, edit **/etc/bluetooth/main.conf**
-
-```zsh
-#/etc/bluetooth/main.conf
-
-[Policy]
-AutoEnable=true
-```
+install bluez
 
 Enable the bluetooth service
 
@@ -574,6 +565,18 @@ Rendering backend = OpenGL 3.1
 
 Scale Method = Accurate
 
+## Other Stuff
+
+### Firmware updates
+
+```zsh
+yay -S fwupd
+yay -S --asdeps udisks2
+sudo systemctl enable --now udisks2.service
+
+fwupdmgr get-updates
+```
+
 ### Plymouth
 
 Install:  
@@ -595,40 +598,6 @@ or use kde settings app.
 Rebuild initial RAM disk after any changes to the theme:  
 `mkinitcpio -P <https://wiki.archlinux.org/index.php/Plymouth>`
 
-### Fonts
-
-Install terminess font for larger console font
-
-yay -S \--needed terminess-powerline-font-git
-
-Install Microsoft Windows 10 ttf Fonts (if desired)
-
-yay -U arch/builds/ttf-ms-win10/ttf-ms-win10-10.0.10586-1-any.pkg.tar.xz
-
-Enable RGB sub-pixel rendering
-
-ln -s /etc/fonts/conf.avail/10-sub-pixel-rgb.conf /etc/fonts/conf.d/
-
-Enable default LCD filter
-
-ln -s /etc/fonts/conf.avail/11-lcdfilter-default.conf /etc/fonts/conf.d/
-
-Disable bitmap fonts
-
-ln -s /etc/fonts/conf.avail/70-no-bitmaps.conf /etc/fonts/conf.d/
-
-Disable the use of embedded bitmap fonts
-
-cp \~/data/arch-setup/font/custom/99-no-embedded.conf /etc/fonts/conf.d
-
-### Firmware updates
-
-Install:  
-`yay -S fwupd`
-
-Get Updates:  
-`fwupdmgr get-updates`
-
 ### Java JDK
 
 yay -S \--needed jdk13-openjdk openjdk13-doc
@@ -640,21 +609,6 @@ yay -U arch/builds/synology-cloud-station-drive/synology\*.xz
 ### Firefox
 
 yay -S \--needed firefox
-
-### Chrome/Chromium
-
-### Nano
-
-- Customise **/etc/nanorc**
-  - set autoindent
-  - set mouse
-  - set linenumbers
-  - include \"/usr/share/nano/\*.nanorc\"
-  - extendsyntax python tabgives \" \"
-
-- Set nano as default editor over vi
-  - export VISUAL=nano
-  - export EDITOR=nano
 
 ### Yubikey
 
@@ -759,7 +713,7 @@ yay -S flatpak
 - slack
 - mumble
 
-### Other Interesting Packages
+### Podman
 
 podman
 
