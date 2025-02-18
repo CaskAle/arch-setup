@@ -641,15 +641,11 @@ support
 
 ### Power and CPU Management
 
-yay -S --needed tlp smartmontools thermald powertop cpupower
-
-sudo systemctl --now enable tlp
-
-sudo systemctl --now enable tlp-sleep \*\*\*
-
-sudo systemctl --now enable thermald \*\*\*
-
-Sudo systemctl --now enable cpupower
+yay -S --asdeps tuned-ppd tuned
+enable these
+or
+yay -S --asdeps power-profiles-daemon
+and enable it
 
 ### LibreOffice
 
