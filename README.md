@@ -345,7 +345,7 @@ I use British English but keep United States as well.
    sudo localectl set-locale en_GB.UTF-8
    ```
 
-### Enable fstrim
+### Enable fstrim to allow periodic ssd trim
 
 If using disk encryption, verify that the following kernel option exists in /boot/loader/entries/arch.conf to allow discards in the luks crypt:
 `rd.luks.options=discard`
@@ -356,7 +356,7 @@ Enable the fstrim systemd timer to periodically trim the SSD:
 sudo systemctl --now enable fstrim.timer
 ```
 
-### Configure networking
+### Configure Networking
 
 #### Enable the iwd backend for NetworkManager  (Note: wpa 3 not working under iwd)
 
@@ -404,14 +404,14 @@ sudo nmtui
 sudo systemctl enable --now reflector.timer
 ```
 
-### Customize Pacman and do system update
+### Customize Pacman and perform system update
 
-#### Edit the /etc/pacman.conf file
+#### Edit the `/etc/pacman.conf` file
 
 - Uncomment the `#Color` line.
 - Uncomment the `#ParallelDownloads = 5` line.
-- Uncomment the `[core-testing]` repo section.
-- Uncomment the `[extra-testing]` repo section.
+- Uncomment the `#[core-testing]` repo section.
+- Uncomment the `#[extra-testing]` repo section.
 - Add a new repo for `[kde-unstable]` above the `[core-testing]` repo.
 
    ```zsh  
@@ -419,7 +419,7 @@ sudo systemctl enable --now reflector.timer
    Include = /etc/pacman.d/mirrorlist
    ```
 
-#### Perform a full system update
+#### Perform a full system update using the new settings
 
 ```zsh
 sudo pacman -Syyu
@@ -427,26 +427,25 @@ sudo pacman -Syyu
 
 ### Customise Makepkg
 
-Edit `/etc/makepkg.conf`
+Edit `/etc/makepkg.conf` file
 
-- Uncomment `BUILDDIR=/tmp/makepkg`
+- Uncomment `#BUILDDIR=/tmp/makepkg`
 
 ### Configure Git
 
 Install git
 
 ```zsh
-# Install git and zsh completions
-sudo pacman -S --needed git
+# Install git zsh completions
 sudo pacman -S --needed --asdeps git-zsh-completion
 
-# Configure user
+# Configure user settings
 git config --global user.email "you@example.com"
 git config --global user.name "Your Name"
 git config --global init.default.Branch main
 ```
 
-### Install yay from AUR
+### Install yay pacman helper from AUR
 
 ```zsh
 mkdir ~/aur
@@ -469,13 +468,12 @@ chsh -s /bis/zsh
 
 #### Configure .zshrc
 
-### Bluetooth
+- Stuff needs to go here
 
-install bluez
-
-Enable the bluetooth service
+### Enable Bluetooth
 
 ```zsh
+yay -S bluez
 sudo systemctl --now enable bluetooth
 ```
 
