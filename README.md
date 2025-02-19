@@ -196,7 +196,7 @@ mount /dev/nvme0n1p1 /mnt/boot
 ## Install the Minimal System
 
 ```zsh
-pacstrap -K /mnt base base-devel btrfs-progs intel-ucode iw iwd linux linux-firmware linux-headers man-pages micro networkmanager openssh plocate python reflector
+pacstrap -K /mnt base base-devel btrfs-progs git intel-ucode iw iwd linux linux-firmware linux-headers man-pages micro networkmanager openssh plocate python reflector
 ```
 
 ### Create an **/etc/fstab** file
@@ -230,7 +230,7 @@ touch /etc/vconsole.conf
 MODULES=(i915)
 
 #Hooks.  sd-encrypt is only needed if doing disk encryption
-HOOKS=(systemd systemd-vconsole sd-encrypt autodetect microcode modconf kms keyboard block filesystems fsck)
+HOOKS=(systemd autodetect microcode modconf kms keyboard  systemd-vconsole block  sd-encrypt filesystems fsck)
 ```
 
 #### Re-build initial RAM filesystem
@@ -305,7 +305,7 @@ umount /mnt/home
 umount /mnt
 ```
 
-# Reboot into the new system
+## Reboot into the new system
 
 ```zsh
 reboot
@@ -316,13 +316,6 @@ Besure to remove the install media when the shutdown process has completed.
 ## Customise the new system
 
 If everything went according to plan, your new, minimal system will come up upon reboot.  As might be expected, this is where the real configuration begins.
-
-### The sooner ssh is available, the sooner we can use ansible
-
-- install openssh
-- adjust security
-- install keys
-
 
 ### Set the clock
 
@@ -338,7 +331,9 @@ sudo timedatectl set-ntp true
 sudo hostnamectl hostname <hostname>
 ```
 
-### Set the locale.  I use British English but keep United States as well.
+### Set the locale
+
+I use British English but keep United States as well.
 
 - Edit the /etc/locale.gen file
 - Uncomment `en_GB.UTF-8`
@@ -441,9 +436,9 @@ Edit `/etc/makepkg.conf`
 Install git
 
 ```zsh
-# Install git
-sudo pacman -S git
-sudo pacman -S --asdeps git-zsh-completion
+# Install git and zsh completions
+sudo pacman -S --needed git
+sudo pacman -S --needed --asdeps git-zsh-completion
 
 # Configure user
 git config --global user.email "you@example.com"
@@ -488,11 +483,11 @@ sudo systemctl --now enable bluetooth
 
 For kde wallet storing of key passwords:
 
-yay -S \--needed ksshaskpass (plasma)
+yay -S --needed ksshaskpass (plasma)
 
-Edit \~/.zshrc & \~/.bashrc:
+Edit ~/.zshrc & ~/.bashrc:
 
-export SSH_ASKPASS=\"/usr/bin/ksshaskpass\"
+export SSH_ASKPASS="/usr/bin/ksshaskpass\"
 
 Edit /etc/ssh/sshd_config:
 
@@ -521,49 +516,37 @@ systemctl \--user enable ssh-agent **(as a user, not root)**
 Add the ssh preload script "\~/data/arch-setup/ssh/ssh-add.sh" to the
 kde autostarts.
 
-### Audio/Video (maybe only install pipewire pipewire-jack and wireplumber???)
+### Audio/Video
 
-yay -S \--needed pipewire wireplumber
-
-For vlc:
-yay vlc phonon-qt6-vlc
+yay -S --needed --asdeps pipewire-pulse pipewire-jack
 
 Intel Video
 
-yay -S --needed mesa vulkan-intel
-yay -S \--needed libva-intel-driver (Hardware Video Acceleration)
+yay -S --needed  vulkan-intel
+yay -S --needed libva-intel-driver (Hardware Video Acceleration)
 
 Edit /etc/mkinitcpio.conf
 
-Modules: Add intel_agp and i915
+Modules: Add i915
 
 Create or copy /etc/modprobe.d/intel.conf
 
 ### KDE/Plasma
 
-Install plasma
-
-yay -S \--needed plasma plasma-wayland-session
+Install plasma group
 
 Install kde apps
 
-yay -S dolphin kate kdialog kfind khelpcenter konsole kdegraphics-thumbnailers
-kwalletmanager kwallet kaccounts-integration kaccounts-providers
-kio-extras signon-kwallet-extension ksystemlog ffmpegthumbs phonon-qt6-vlc
+yay -S dolphin kate kdialog kfind khelpcenter konsole kwalletmanager kwallet kaccounts-integration kaccounts-providers kio-extras signon-kwallet-extension ksystemlog
 
-For the kde discover app, the backends are:
+Opt depends:
+konsole -> keditbookmarks
 
-packagekit-qt6 (for arch packages)
+dolphin -> poppler-data (reccomended), ffmpegthumbs, kdegraphics-thumbnailers, kio-admin, purpose
 
 Enable sddm service
 
-sudo systemctl \--now enable sddm
-
-KDE System Settings / Display and Monitor / Compositor
-
-Rendering backend = OpenGL 3.1
-
-Scale Method = Accurate
+sudo systemctl --now enable sddm
 
 ## Other Stuff
 
