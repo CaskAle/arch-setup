@@ -534,16 +534,15 @@ Install plasma group
 
 Install kde apps
 
-yay -S dolphin kate kdialog kfind khelpcenter konsole kwalletmanager kwallet kaccounts-integration kaccounts-providers kio-extras signon-kwallet-extension ksystemlog
+```zsh
+yay -S --needed dolphin dolphin-plugins gwenview kate kdialog kfind khelpcenter konsole kwalletmanager kaccounts-providers kcolorchooser kcron kgpg kjournald kio-gdrive kompare ksystemlog kweather markdownpart okular
 
-Opt depends:
-konsole -> keditbookmarks
-
-dolphin -> poppler-data (reccomended), ffmpegthumbs, kdegraphics-thumbnailers, kio-admin, purpose
+yay -S --needed --asdeps ffmpegthumbs kdegraphics-thumbnailers keditbookmarks kio-admin poppler-data purpose
+```
 
 Enable sddm service
 
-sudo systemctl --now enable sddm
+`sudo systemctl --now enable sddm.service`
 
 ## Other Stuff
 
