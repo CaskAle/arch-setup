@@ -473,7 +473,7 @@ chsh -s /bis/zsh
 ### Enable Bluetooth
 
 ```zsh
-yay -S bluez
+yay -S --needed bluez
 sudo systemctl --now enable bluetooth
 ```
 
@@ -514,20 +514,19 @@ systemctl \--user enable ssh-agent **(as a user, not root)**
 Add the ssh preload script "\~/data/arch-setup/ssh/ssh-add.sh" to the
 kde autostarts.
 
-### Audio/Video
-
-yay -S --needed --asdeps pipewire-pulse pipewire-jack
-
-Intel Video
+### Intel Video
 
 yay -S --needed  vulkan-intel
 yay -S --needed libva-intel-driver (Hardware Video Acceleration)
+yay -S vulcan-intel intel-media-driver (Explicit)
 
 Edit /etc/mkinitcpio.conf
 
-Modules: Add i915
+Modules: Add i915 xe
 
 Create or copy /etc/modprobe.d/intel.conf
+
+#### This really needs consultation of the wiki, machine dependent
 
 ### KDE/Plasma
 
@@ -560,42 +559,41 @@ fwupdmgr get-updates
 
 ### Plymouth
 
-Install:  
-`yay -S --needed plymouth plymouth-kcm breeze-plymouth`
+- Install:  
+`yay -S --needed plymouth`
 
-Add kernel options:  
-`quiet splash`
+- Add `splash` to options in `/boot/loader/entries/arch.conf`
 
-Update the HOOKS in: **/etc/mkinitcpio.conf**:  
-`HOOKS=(base systemd plymouth ...)`
+- Update the HOOKS in: `/etc/mkinitcpio.conf`  
+`HOOKS=(systemd plymouth ...)`
 
-Rebuild initram:  
+- Rebuild initramfs:  
 `sudo mkinitcpio -P`
 
-Set/query the default theme:  
+- Set/query the default theme:  
 `plymouth-set-default-theme -R \<theme\>`  
-or use kde settings app.
+or use the kde settings app.
 
-Rebuild initial RAM disk after any changes to the theme:  
-`mkinitcpio -P <https://wiki.archlinux.org/index.php/Plymouth>`
+- Rebuild initial RAM disk after any changes to the theme:  
+`mkinitcpio -P`
 
 ### Java JDK
 
-yay -S \--needed jdk13-openjdk openjdk13-doc
+`yay -S --needed jdk13-openjdk openjdk13-doc`
 
 ### Synology Drive
 
-yay -U arch/builds/synology-cloud-station-drive/synology\*.xz
+Install from Flatpak
 
 ### Firefox
 
-yay -S \--needed firefox
+yay -S --needed firefox
 
 ### Yubikey
 
-yay -S \--needed libu2f-host to enable reading the device
+yay -S --needed libu2f-host to enable reading the device
 
-yay -S \--needed yubico-pam to enable sign on with device
+yay -S --needed yubico-pam to enable sign on with device
 
 Add this as the top line to /etc/pam.d/system-auth:
 
@@ -610,10 +608,10 @@ root:cccccckbdftk:ccccccjekvfu
 
 ### Printing and Scanning
 
-yay -S \--needed cups hplip python-pyqt5 python-reportlab python-pillow
+yay -S --needed cups hplip python-pyqt5 python-reportlab python-pillow
 rpcbind sane
 
-sudo systemctl \--now enable org.cups.cupsd
+sudo systemctl --now enable org.cups.cupsd
 
 sudo hp-setup
 
@@ -636,13 +634,13 @@ yay -S --needed libmythes mythes-en for thesarus
 
 yay -S --needed hunspell hunspell-en_GB hunspell-en_US for spell check
 
-yay -S \--needed hyphen hyphen-en for hyphenation
+yay -S --needed hyphen hyphen-en for hyphenation
 
 Enable Writing Aids under Language Settings/Writing Aids
 
 Enable Java under LibreOffice/Advanced
 
-Edit /etc/profile.d/libreoffice-fresh.sh to enable QT look and feel
+Edit `/etc/profile.d/libreoffice-fresh.sh` to enable QT look and feel
 
 ### KVM/Qemu/Libvirt
 
@@ -654,10 +652,6 @@ yay -S --needed ebtables dnsmasq for the default NAT/DHCP networking.
 
 yay -S --needed bridge-utils for bridged networking.
 
-**Enable iommu passthrough** **in **kernel options**:**
-
-**iommu_intel*=1*
-
 Enable nested virtualisation via /etc/modprobe.d/kvm.conf.  Create or copy.
 
 `options kvm_intel nested=1*`
@@ -665,7 +659,7 @@ Enable nested virtualisation via /etc/modprobe.d/kvm.conf.  Create or copy.
 Video card needs extra ram configured in guest to get full resolution.
 Under Video QXL ensure xml looks like:
 
-ram=\"65536\" vram=\"65536\" vgamem=\"65536\"
+ram="65536" vram="65536" vgamem=\"65536\"
 
 <https://wiki.archlinux.org/index.php/Libvirt>
 <https://wiki.archlinux.org/index.php/Libvirt#UEFI_Support>
@@ -673,26 +667,13 @@ ram=\"65536\" vram=\"65536\" vgamem=\"65536\"
 For file sharing with virtio-fs:
 <https://libvirt.org/kbase/virtiofs.html>
 
-### BeerSmith
-
-yay -U \~/vmdata/aur/beersmith/BeerSmith\*.xz
-
 ### DVD Ripping
 
-yay -S handbrake libdvdcss dvd+rw-tools libx264
-
-### Flatpak Installs
-
-yay -S flatpak
-
-- discord
-- telegram
-- slack
-- mumble
+`yay -S handbrake libdvdcss dvd+rw-tools libx264`
 
 ### Podman
 
-podman
+`yay -S --needed podman`
 
 ### Things to look up
 
@@ -700,5 +681,3 @@ podman
 - Password not working with yubikey enabled on kde lock screen.
 - Bridging with libvirt.
 - Intel GPU on libvirt
-- Password synchronisation between linux and samba
-- Do I need to include fsck and fstab parms for xsf & vfat filesystems???
