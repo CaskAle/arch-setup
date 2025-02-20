@@ -530,9 +530,13 @@ Create or copy /etc/modprobe.d/intel.conf
 
 ### KDE/Plasma
 
-Install plasma group
+#### Install plasma group
 
-Install kde apps
+Some issues existed around this group from kde_unstable.  Lots did not get installed
+
+`yay -S --needed plasma`
+
+#### Now install the kde applications
 
 ```zsh
 yay -S --needed dolphin dolphin-plugins gwenview kate kdialog kfind khelpcenter konsole kwalletmanager kaccounts-providers kcolorchooser kcron kgpg kjournald kio-gdrive kompare ksystemlog kweather markdownpart okular
