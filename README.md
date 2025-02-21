@@ -557,44 +557,51 @@ sudo systemctl --now enable bluetooth
 
 ### SSH
 
-- Edit `~/.zshrc` & `~/.bashrc` and add `export SSH_ASKPASS="/usr/bin/ksshaskpass"`
+#### Edit `~/.zshrc` & `~/.bashrc` and add 
 
-- Create `/etc/ssh/sshd_config.d/99-harden-authentication.conf`
+```zsh
+export SSH_ASKPASS="/usr/bin/ksshaskpass"
+```
 
-   ```zsh
-   # /etc/ssh/sshd_config.d/99-harden-authentication.conf
+#### Create/Edit `/etc/ssh/sshd_config.d/99-harden-authentication.conf`
 
-   HostKey /etc/ssh/ssh_host_ed25519_key
-   PasswordAuthentication no
-   PubkeyAuthentication yes
-   PermitRootLogin no
-   ```
+```zsh
+# /etc/ssh/sshd_config.d/99-harden-authentication.conf
 
-- Ensure that the public key for id_ed25519 is in `~/.ssh/authorized_users`
+HostKey /etc/ssh/ssh_host_ed25519_key
+PasswordAuthentication no
+PubkeyAuthentication yes
+PermitRootLogin no
+```
 
-- Enable ssh daemon
+#### Ensure that the public key for id_ed25519 is in `~/.ssh/authorized_users`
 
-   ```zsh
-   sudo systemctl enable --now sshd.service`
-   ```
+```zsh
+ssh add key
+```
 
-- Edit/Create `~/.pam_environment`
-  
-   ```zsh
-   SSH_AUTH_SOCK DEFAULT="\${XDG_RUNTIME_DIR}/ssh-agent.socketmi"
-   ```
+#### Enable ssh daemon
 
-- Enable storing of ssh key passwords
+```zsh
+sudo systemctl enable --now sshd.service`
+```
 
-   ```zsh
-   sudo cp /data/repos/arch-setup/ssh/ssh-agent.service /etc/systemd/user
-   
-   # As a user, not root
-   systemctl --user enable ssh-agent
-   ```
+#### Edit/Create `~/.pam_environment`
 
-- Add the ssh preload script `~/data/repos/arch-setup/ssh/ssh-add.sh` to the
-kde autostarts.
+```zsh
+SSH_AUTH_SOCK DEFAULT="\${XDG_RUNTIME_DIR}/ssh-agent.socketmi"
+```
+
+#### Enable storing of ssh key passwords
+
+```zsh
+sudo cp /data/repos/arch-setup/ssh/ssh-agent.service /etc/systemd/user
+
+# As a user, not root
+systemctl --user enable ssh-agent
+```
+
+#### Add the ssh preload script `~/data/repos/arch-setup/ssh/ssh-add.sh` to the kde autostarts.
 
 ```zsh
 ~/.config/autostart/ssh-add.desktop
