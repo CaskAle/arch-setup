@@ -196,7 +196,7 @@ mount /dev/nvme0n1p1 /mnt/boot
 ## Install the Minimal System
 
 ```zsh
-pacstrap -K /mnt base base-devel btrfs-progs git intel-ucode iw iwd linux linux-firmware linux-headers man-pages micro networkmanager openssh plocate python reflector
+pacstrap -K /mnt base base-devel btrfs-progs git intel-ucode iw iwd linux linux-firmware linux-headers man-db man-pages micro networkmanager openssh plocate python reflector
 ```
 
 ### Create an **/etc/fstab** file
@@ -406,13 +406,16 @@ sudo systemctl enable --now reflector.timer
 
 ### Customize Pacman and perform system update
 
-#### Edit the `/etc/pacman.conf` file
+#### Edit the `/etc/pacman.conf` file and uncomment the following lines
 
-- Uncomment the `#Color` line.
-- Uncomment the `#ParallelDownloads = 5` line.
-- Uncomment the `#[core-testing]` repo section.
-- Uncomment the `#[extra-testing]` repo section.
-- Add a new repo for `[kde-unstable]` above the `[core-testing]` repo.
+```zsh
+#Color
+#ParallelDownloads = 5`
+#[core-testing]
+#[extra-testing]
+```
+
+#### Add a new repo for `[kde-unstable]` before the `[core-testing]` repo
 
    ```zsh  
    [kde-unstable]
@@ -427,9 +430,7 @@ sudo pacman -Syyu
 
 ### Customise Makepkg
 
-Edit `/etc/makepkg.conf` file
-
-- Uncomment `#BUILDDIR=/tmp/makepkg`
+Edit `/etc/makepkg.conf` file and uncomment `#BUILDDIR=/tmp/makepkg`.
 
 ### Configure Git
 
@@ -459,16 +460,96 @@ makepkg -si
 
 ```zsh
 # Install
-sudo pacman -S --needed zsh zsh-autosuggestions zsh-completions zsh-autocomplete zsh-syntax-highlighting
+yay -S --needed zsh-autocomplete zsh-autosuggestions zsh-completions zsh-history-substring-search zsh-syntax-highlighting
 
 # Ensure that root and troy use zsh shell.
-sudo chsh -s /bin/zsh
+sudo chsh root -s /bin/zsh
 chsh -s /bis/zsh
 ```
 
 #### Configure .zshrc
 
-- Stuff needs to go here
+```zsh
+# ~/.zshrc
+
+HISTFILE=~/.zsh_history
+HISTSIZE=2000
+SAVEHIST=2000
+
+setopt autocd extendedglob nomatch
+setopt share_history
+unsetopt beep
+
+bindkey -e
+
+autoload -Uz compinit promptinit
+compinit
+promptinit
+prompt adam1 yellow
+
+zstyle :compinstall filename '/home/troy/.zshrc'
+zstyle 'completion::complete:*' gain-privileges 1
+zstyle ':completion:*' list-colors ''
+
+source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
+source /usr/share/zsh/plugins/zsh-autocomplete/zsh-autocomplete.plugin.zsh
+
+export EDITOR=micro
+ 
+alias ls='ls --color=auto'
+alias l='ls -l'
+alias ll='ls -lah'
+alias la='ls -A'
+
+# create a zkbd compatible hash;
+# to add other keys to this hash, see: man 5 terminfo
+typeset -g -A key
+
+key[Home]="${terminfo[khome]}"
+key[End]="${terminfo[kend]}"
+key[Insert]="${terminfo[kich1]}"
+key[Backspace]="${terminfo[kbs]}"
+key[Delete]="${terminfo[kdch1]}"
+key[Up]="${terminfo[kcuu1]}"
+key[Down]="${terminfo[kcud1]}"
+key[Left]="${terminfo[kcub1]}"
+key[Right]="${terminfo[kcuf1]}"
+key[PageUp]="${terminfo[kpp]}"
+key[PageDown]="${terminfo[knp]}"
+key[Shift-Tab]="${terminfo[kcbt]}"
+
+# setup key accordingly
+[[ -n "${key[Home]}"      ]] && bindkey -- "${key[Home]}"       beginning-of-line
+[[ -n "${key[End]}"       ]] && bindkey -- "${key[End]}"        end-of-line
+[[ -n "${key[Insert]}"    ]] && bindkey -- "${key[Insert]}"     overwrite-mode
+[[ -n "${key[Backspace]}" ]] && bindkey -- "${key[Backspace]}"  backward-delete-char
+[[ -n "${key[Delete]}"    ]] && bindkey -- "${key[Delete]}"     delete-char
+#[[ -n "${key[Up]}"        ]] && bindkey -- "${key[Up]}"         up-line-or-history
+#[[ -n "${key[Down]}"      ]] && bindkey -- "${key[Down]}"       down-line-or-history
+[[ -n "${key[Left]}"      ]] && bindkey -- "${key[Left]}"       backward-char
+[[ -n "${key[Right]}"     ]] && bindkey -- "${key[Right]}"      forward-char
+[[ -n "${key[PageUp]}"    ]] && bindkey -- "${key[PageUp]}"     beginning-of-buffer-or-history
+[[ -n "${key[PageDown]}"  ]] && bindkey -- "${key[PageDown]}"   end-of-buffer-or-history
+[[ -n "${key[Shift-Tab]}" ]] && bindkey -- "${key[Shift-Tab]}"  reverse-menu-complete
+
+# Finally, make sure the terminal is in application mode, when zle is
+# active. Only then are the values from $terminfo valid.
+if (( ${+terminfo[smkx]} && ${+terminfo[rmkx]} )); then
+  autoload -Uz add-zle-hook-widget
+  function zle_application_mode_start { echoti smkx }
+  function zle_application_mode_stop { echoti rmkx }
+  add-zle-hook-widget -Uz zle-line-init zle_application_mode_start
+  add-zle-hook-widget -Uz zle-line-finish zle_application_mode_stop
+fi
+
+#autoload -Uz up-line-or-beginning-search down-line-or-beginning-search
+#zle -N up-line-or-beginning-search
+#zle -N down-line-or-beginning-search
+#
+#[[ -n "${key[Up]}"   ]] && bindkey -- "${key[Up]}"   up-line-or-beginning-search
+#[[ -n "${key[Down]}" ]] && bindkey -- "${key[Down]}" down-line-or-beginning-search
+```
 
 ### Enable Bluetooth
 
@@ -479,39 +560,36 @@ sudo systemctl --now enable bluetooth
 
 ### SSH
 
-For kde wallet storing of key passwords:
+- Edit `~/.zshrc` & `~/.bashrc` and add `export SSH_ASKPASS="/usr/bin/ksshaskpass"`
 
-yay -S --needed ksshaskpass (plasma)
+- Create `/etc/ssh/sshd_config.d/99-harden-authentication.conf`
 
-Edit ~/.zshrc & ~/.bashrc:
+   ```zsh
+   # /etc/ssh/sshd_config.d/99-harden-authentication.conf
 
-export SSH_ASKPASS="/usr/bin/ksshaskpass\"
+   HostKey /etc/ssh/ssh_host_ed25519_key
+   PasswordAuthentication no
+   PubkeyAuthentication yes
+   PermitRootLogin no
+   ```
 
-Edit /etc/ssh/sshd_config:
+- Ensure that the public key for id_ed25519 is in `~/.ssh/authorized_users`
 
-Un-comment: HostKey /etc/ssh/ssh_host_ed25519_key
+- Enable ssh daemon
 
-Un-comment and edit: PasswordAuthentication no
+   `sudo systemctl enable --now sshd.service`
 
-Un-comment: PubkeyAuthentication yes
+- Edit `~/.pam_environment` to include:
 
-Ensure that the public key for id_ed25519 is in \~/.ssh/authorized_users
+   `SSH_AUTH_SOCK DEFAULT=\"\${XDG_RUNTIME_DIR}/ssh-agent.socket\"`
 
-Enable ssh daemon
+- Enable storing of ssh key passwords:
 
-sudo systemctl \--now enable sshd
+   `sudo cp /data/repos/arch-setup/ssh/ssh-agent.service /etc/systemd/user`
 
-Edit "\~/.pam_environment" to include:
+   `systemctl --user enable ssh-agent` **(as a user, not root)**
 
-SSH_AUTH_SOCK DEFAULT=\"\${XDG_RUNTIME_DIR}/ssh-agent.socket\"
-
-Enable storing of ssh key passwords:
-
-sudo cp /data/arch-setup/ssh/ssh-agent.service /etc/systemd/user
-
-systemctl \--user enable ssh-agent **(as a user, not root)**
-
-Add the ssh preload script "\~/data/arch-setup/ssh/ssh-add.sh" to the
+- Add the ssh preload script `~/data/repos/arch-setup/ssh/ssh-add.sh` to the
 kde autostarts.
 
 ### Intel Video
@@ -534,7 +612,9 @@ Create or copy /etc/modprobe.d/intel.conf
 
 Some issues existed around this group from kde_unstable.  Lots did not get installed
 
-`yay -S --needed plasma`
+```zsh
+yay -S --needed plasma
+```
 
 #### Now install the kde applications
 
@@ -588,9 +668,7 @@ or use the kde settings app.
 
 Install from Flatpak
 
-### Firefox
-
-yay -S --needed firefox
+### Cockpit
 
 ### Yubikey
 
@@ -623,11 +701,10 @@ support
 
 ### Power and CPU Management
 
-yay -S --asdeps tuned-ppd tuned
-enable these
-or
-yay -S --asdeps power-profiles-daemon
-and enable it
+`yay -S --asdeps tuned-ppd`
+
+or  
+`yay -S --asdeps power-profiles-daemon`
 
 ### LibreOffice
 
