@@ -463,6 +463,12 @@ makepkg -si
 # Install
 yay -S --needed zsh-autocomplete zsh-autosuggestions zsh-completions zsh-history-substring-search zsh-syntax-highlighting
 
+# Nerd font
+yay -S --needed ttf-firacode-nerd
+
+# Starship prompt
+yay -S --needed starship
+
 # Ensure that root and troy use zsh shell.
 sudo chsh root -s /bin/zsh
 chsh -s /bis/zsh
@@ -473,35 +479,35 @@ chsh -s /bis/zsh
 ```zsh
 # ~/.zshrc
 
+# History Settings
 HISTFILE=~/.zsh_history
 HISTSIZE=2000
 SAVEHIST=2000
+setopt SHARE_HISTORY
+setopt HIST_IGNORE_ALL_DUPS
+setopt HIST_EXPIRE_DUPS_FIRST
 
 setopt autocd extendedglob nomatch
-setopt share_history
 unsetopt beep
 
-bindkey -e
+autoload -Uz compinit; compinit
 
-autoload -Uz compinit promptinit
-compinit
-promptinit
-prompt adam1 yellow
+eval "$(starship init zsh)"
 
-zstyle :compinstall filename '/home/troy/.zshrc'
 zstyle 'completion::complete:*' gain-privileges 1
 zstyle ':completion:*' list-colors ''
 
-source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
-source /usr/share/zsh/plugins/zsh-autocomplete/zsh-autocomplete.plugin.zsh
-
 export EDITOR=micro
+export SSH_ASKPASS="/usr/bin/ksshaskpass"
  
-alias ls='ls --color=auto'
-alias l='ls -l'
+alias ls='ls -v --color=auto --group-directories-first'
+alias l='ls -lh'
 alias ll='ls -lah'
 alias la='ls -A'
+
+alias df="df -h"
+
+bindkey -e
 
 # create a zkbd compatible hash;
 # to add other keys to this hash, see: man 5 terminfo
@@ -537,19 +543,30 @@ key[Shift-Tab]="${terminfo[kcbt]}"
 # Finally, make sure the terminal is in application mode, when zle is
 # active. Only then are the values from $terminfo valid.
 if (( ${+terminfo[smkx]} && ${+terminfo[rmkx]} )); then
-  autoload -Uz add-zle-hook-widget
-  function zle_application_mode_start { echoti smkx }
-  function zle_application_mode_stop { echoti rmkx }
-  add-zle-hook-widget -Uz zle-line-init zle_application_mode_start
-  add-zle-hook-widget -Uz zle-line-finish zle_application_mode_stop
+	autoload -Uz add-zle-hook-widget
+	function zle_application_mode_start { echoti smkx }
+	function zle_application_mode_stop { echoti rmkx }
+	add-zle-hook-widget -Uz zle-line-init zle_application_mode_start
+	add-zle-hook-widget -Uz zle-line-finish zle_application_mode_stop
 fi
 
-#autoload -Uz up-line-or-beginning-search down-line-or-beginning-search
-#zle -N up-line-or-beginning-search
-#zle -N down-line-or-beginning-search
-#
-#[[ -n "${key[Up]}"   ]] && bindkey -- "${key[Up]}"   up-line-or-beginning-search
-#[[ -n "${key[Down]}" ]] && bindkey -- "${key[Down]}" down-line-or-beginning-search
+autoload -Uz up-line-or-beginning-search down-line-or-beginning-search
+zle -N up-line-or-beginning-search
+zle -N down-line-or-beginning-search
+
+[[ -n "${key[Up]}"   ]] && bindkey -- "${key[Up]}"   up-line-or-beginning-search
+[[ -n "${key[Down]}" ]] && bindkey -- "${key[Down]}" down-line-or-beginning-search
+
+# zsh-autosuggestions
+#ZSH_AUTOSUGGEST_STRATEGY=(history completion)
+source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
+
+# zsh-autocomplete
+#source /usr/share/zsh/plugins/zsh-autocomplete/zsh-autocomplete.plugin.zsh
+
+# zsh-syntax-highlighting (MUST BE LAST)
+source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+
 ```
 
 ### Enable Bluetooth
@@ -581,7 +598,7 @@ PermitRootLogin no
 #### Ensure that the public key for id_ed25519 is in `~/.ssh/authorized_users`
 
 ```zsh
-ssh add key
+ssh-copy-id -i ~/.ssh/id_ed25519.pub username@remote-server.org
 ```
 
 #### Enable ssh daemon
@@ -599,13 +616,11 @@ SSH_AUTH_SOCK DEFAULT="\${XDG_RUNTIME_DIR}/ssh-agent.socketmi"
 #### Enable storing of ssh key passwords
 
 ```zsh
-sudo cp /data/repos/arch-setup/ssh/ssh-agent.service /etc/systemd/user
-
 # As a user, not root
-systemctl --user enable ssh-agent
+systemctl --user enable --now ssh-agent.service
 ```
 
-#### Add the ssh preload script `~/data/repos/arch-setup/ssh/ssh-add.sh` to the kde autostarts
+#### Create the ssh preload script `~/.config/autostart/ssh-add.desktop` in the kde autostarts
 
 ```zsh
 ~/.config/autostart/ssh-add.desktop
