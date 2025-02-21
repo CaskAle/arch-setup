@@ -427,7 +427,11 @@ sudo pacman -Syyu
 
 ### Customise Makepkg
 
-Edit `/etc/makepkg.conf` file and uncomment `#BUILDDIR=/tmp/makepkg`.
+Edit `/etc/makepkg.conf` file and uncomment 
+
+```zsh
+#BUILDDIR=/tmp/makepkg
+```
 
 ### Configure Git
 
@@ -557,7 +561,7 @@ sudo systemctl --now enable bluetooth
 
 ### SSH
 
-#### Edit `~/.zshrc` & `~/.bashrc` and add 
+#### Edit `~/.zshrc` & `~/.bashrc` and add
 
 ```zsh
 export SSH_ASKPASS="/usr/bin/ksshaskpass"
@@ -601,7 +605,7 @@ sudo cp /data/repos/arch-setup/ssh/ssh-agent.service /etc/systemd/user
 systemctl --user enable ssh-agent
 ```
 
-#### Add the ssh preload script `~/data/repos/arch-setup/ssh/ssh-add.sh` to the kde autostarts.
+#### Add the ssh preload script `~/data/repos/arch-setup/ssh/ssh-add.sh` to the kde autostarts
 
 ```zsh
 ~/.config/autostart/ssh-add.desktop
