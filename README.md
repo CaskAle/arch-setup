@@ -195,6 +195,8 @@ mount /dev/nvme0n1p1 /mnt/boot
 
 ## Install the Minimal System
 
+### Install the actual software
+
 ```zsh
 pacstrap -K /mnt base base-devel btrfs-progs git intel-ucode iw iwd linux linux-firmware linux-headers man-db man-pages micro networkmanager openssh plocate python reflector
 ```
@@ -219,7 +221,7 @@ In order to ensure that the console font is a readable size upon booting into th
 # Set a console font
 echo FONT=TER132B > /etc/vconsole.conf
 
-# Otherwise, touch /etc/vconsole.conf
+# Otherwise, touch /etc/vconsole.conf to make sure it exists
 touch /etc/vconsole.conf
 ```
 
@@ -261,7 +263,7 @@ options root=/dev/nvme0n1p2 rootflags=subvol=@ rw quiet
 options rd.luks.name=<luks-UUID>=crypt root=/dev/mapper/crypt rd.luks.options=timeout=0,discard rootflags=x-systemd.device-timeout=0,subvol=@ rw quiet
 ```
 
-- Use **lsblk -fp** to determine the appropriate 'luks-UUID' for the luks encrypted device, **NOT** the root volume.
+- Use `lsblk -fp` to determine the appropriate 'luks-UUID' for the luks encrypted device, **NOT** the root volume.
 
 ##### Create/Edit the file: /boot/loader/loader.conf
 
@@ -289,29 +291,24 @@ useradd -m -u 1000 -g troy -G wheel troy
 passwd troy
 ```
 
-#### Finish up the chroot configuration
+#### Exit the chroot configuration
 
 ```zsh
-# Exit the chroot environment.
 exit
 ```
 
-### Reboot to the new system
+## Reboot to the new system
 
 ```zsh
 # Unmount the filesystems
 umount /mnt/boot
 umount /mnt/home
 umount /mnt
-```
 
-## Reboot into the new system
-
-```zsh
 reboot
 ```
 
-Besure to remove the install media when the shutdown process has completed.
+Be sure to remove the install media when the shutdown process has completed.
 
 ## Customise the new system
 
@@ -577,20 +574,36 @@ sudo systemctl --now enable bluetooth
 
 - Enable ssh daemon
 
-   `sudo systemctl enable --now sshd.service`
+   ```zsh
+   sudo systemctl enable --now sshd.service`
+   ```
 
-- Edit `~/.pam_environment` to include:
+- Edit/Create `~/.pam_environment`
+  
+   ```zsh
+   SSH_AUTH_SOCK DEFAULT="\${XDG_RUNTIME_DIR}/ssh-agent.socketmi"
+   ```
 
-   `SSH_AUTH_SOCK DEFAULT=\"\${XDG_RUNTIME_DIR}/ssh-agent.socket\"`
+- Enable storing of ssh key passwords
 
-- Enable storing of ssh key passwords:
-
-   `sudo cp /data/repos/arch-setup/ssh/ssh-agent.service /etc/systemd/user`
-
-   `systemctl --user enable ssh-agent` **(as a user, not root)**
+   ```zsh
+   sudo cp /data/repos/arch-setup/ssh/ssh-agent.service /etc/systemd/user
+   
+   # As a user, not root
+   systemctl --user enable ssh-agent
+   ```
 
 - Add the ssh preload script `~/data/repos/arch-setup/ssh/ssh-add.sh` to the
 kde autostarts.
+
+```zsh
+~/.config/autostart/ssh-add.desktop
+
+[Desktop Entry]
+Exec=zsh --extendedglob -c 'ssh-add -q ~/.ssh/id* < /dev/null'
+Name=ssh-add
+Type=Application
+```
 
 ### Intel Video
 
