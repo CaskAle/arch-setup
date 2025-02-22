@@ -613,22 +613,21 @@ sudo systemctl enable --now sshd.service`
 SSH_AUTH_SOCK DEFAULT="\${XDG_RUNTIME_DIR}/ssh-agent.socketmi"
 ```
 
-#### Enable storing of ssh key passwords
+#### Enable storing of ssh key passwords in ssh-agent
 
 ```zsh
 # As a user, not root
 systemctl --user enable --now ssh-agent.service
 ```
 
-#### Create the ssh preload script `~/.config/autostart/ssh-add.desktop` in the kde autostarts
+#### Create ssh related environment variables for kde
 
 ```zsh
-~/.config/autostart/ssh-add.desktop
+#~/.config/environment.d/99-ssh-askpass.conf
 
-[Desktop Entry]
-Exec=zsh --extendedglob -c 'ssh-add -q ~/.ssh/id* < /dev/null'
-Name=ssh-add
-Type=Application
+SSH_ASKPASS=/usr/bin/ksshaskpass
+SSH_ASKPASS_REQUIRE=prefer
+SSH_AUTH_SOCK=$XDG_RUNTIME_DIR/ssh-agent.socket
 ```
 
 ### Intel Video
@@ -708,6 +707,15 @@ or use the kde settings app.
 Install from Flatpak
 
 ### Cockpit
+
+```zsh
+# Install
+yay -S --needed cockpit
+yay -S --needed --asdeps cockpit-storaged cockpit-packagekit cockpit-podman cockpit-machines
+
+# Enable
+sudo systemctl enable --now cockpit.socket
+```
 
 ### Yubikey
 
