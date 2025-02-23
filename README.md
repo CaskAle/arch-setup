@@ -342,15 +342,14 @@ I use British English but keep United States as well.
    sudo localectl set-locale en_GB.UTF-8
    ```
 
-### Enable fstrim to allow periodic ssd trim
+### Enable some base systemd services
 
-If using disk encryption, verify that the following kernel option exists in /boot/loader/entries/arch.conf to allow discards in the luks crypt:
-`rd.luks.options=discard`
-
-Enable the fstrim systemd timer to periodically trim the SSD:
-
-```zsh
+```zsh 
+# Enable the fstrim systemd timer to periodically trim the SSD:
 sudo systemctl --now enable fstrim.timer
+
+# Enable systemd-boot automatic update service
+sudo systemctl enable --now systemd-boot-update.service
 ```
 
 ### Configure Networking
