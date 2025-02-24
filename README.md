@@ -150,7 +150,7 @@ mkfs.btrfs -L root /dev/mapper/crypt
 # Mount root filesystem onto /mnt
 mount -o compress=zstd /dev/nvme0n1p2 /mnt
 
-# or
+# or, if encryped
 mount -o compress=zstd /dev/mapper/crypt /mnt
 ```
 
@@ -232,7 +232,7 @@ touch /etc/vconsole.conf
 MODULES=(i915)
 
 #Hooks.  sd-encrypt is only needed if doing disk encryption
-HOOKS=(systemd autodetect microcode modconf kms keyboard  systemd-vconsole block  sd-encrypt filesystems fsck)
+HOOKS=(systemd autodetect microcode modconf kms keyboard  sd-vconsole block  sd-encrypt filesystems fsck)
 ```
 
 #### Re-build initial RAM filesystem
@@ -346,7 +346,7 @@ I use British English but keep United States as well.
 
 ```zsh 
 # Enable the fstrim systemd timer to periodically trim the SSD:
-sudo systemctl --now enable fstrim.timer
+sudo systemctl enable --now fstrim.timer
 
 # Enable systemd-boot automatic update service
 sudo systemctl enable --now systemd-boot-update.service
@@ -470,7 +470,7 @@ yay -S --needed starship
 
 # Ensure that root and troy use zsh shell.
 sudo chsh root -s /bin/zsh
-chsh -s /bis/zsh
+chsh -s /bin/zsh
 ```
 
 #### Configure .zshrc
@@ -572,7 +572,7 @@ source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zs
 
 ```zsh
 yay -S --needed bluez
-sudo systemctl --now enable bluetooth
+sudo systemctl enable --now bluetooth
 ```
 
 ### SSH
@@ -583,10 +583,10 @@ sudo systemctl --now enable bluetooth
 export SSH_ASKPASS="/usr/bin/ksshaskpass"
 ```
 
-#### Create/Edit `/etc/ssh/sshd_config.d/99-harden-authentication.conf`
+#### Create/Edit `/etc/ssh/sshd_config.d/10-harden-authentication.conf`
 
 ```zsh
-# /etc/ssh/sshd_config.d/99-harden-authentication.conf
+# /etc/ssh/sshd_config.d/10-harden-authentication.conf
 
 HostKey /etc/ssh/ssh_host_ed25519_key
 PasswordAuthentication no
@@ -609,7 +609,9 @@ sudo systemctl enable --now sshd.service`
 #### Edit/Create `~/.pam_environment`
 
 ```zsh
-SSH_AUTH_SOCK DEFAULT="\${XDG_RUNTIME_DIR}/ssh-agent.socketmi"
+#~/.pam_environment
+
+SSH_AUTH_SOCK=${XDG_RUNTIME_DIR}/ssh-agent.socket
 ```
 
 #### Enable storing of ssh key passwords in ssh-agent
@@ -622,7 +624,7 @@ systemctl --user enable --now ssh-agent.service
 #### Create ssh related environment variables for kde
 
 ```zsh
-#~/.config/environment.d/99-ssh-askpass.conf
+#~/.config/environment.d/10-ssh-askpass.conf
 
 SSH_ASKPASS=/usr/bin/ksshaskpass
 SSH_ASKPASS_REQUIRE=prefer
@@ -663,7 +665,7 @@ yay -S --needed --asdeps ffmpegthumbs kdegraphics-thumbnailers keditbookmarks ki
 
 Enable sddm service
 
-`sudo systemctl --now enable sddm.service`
+`sudo systemctl enable --now sddm.service`
 
 ## Other Stuff
 
@@ -738,7 +740,7 @@ root:cccccckbdftk:ccccccjekvfu
 yay -S --needed cups hplip python-pyqt5 python-reportlab python-pillow
 rpcbind sane
 
-sudo systemctl --now enable org.cups.cupsd
+sudo systemctl enable --now org.cups.cupsd
 
 sudo hp-setup
 
