@@ -344,7 +344,7 @@ I use British English but keep United States as well.
 
 ### Enable some base systemd services
 
-```zsh 
+```zsh
 # Enable the fstrim systemd timer to periodically trim the SSD:
 sudo systemctl enable --now fstrim.timer
 
@@ -609,7 +609,7 @@ sudo systemctl enable --now sshd.service`
 #### Edit/Create `~/.pam_environment`
 
 ```zsh
-#~/.pam_environment
+# ~/.pam_environment
 
 SSH_AUTH_SOCK=${XDG_RUNTIME_DIR}/ssh-agent.socket
 ```
@@ -618,13 +618,13 @@ SSH_AUTH_SOCK=${XDG_RUNTIME_DIR}/ssh-agent.socket
 
 ```zsh
 # As a user, not root
-systemctl --user enable --now ssh-agent.service
+sudo systemctl --user enable --now ssh-agent.service
 ```
 
 #### Create ssh related environment variables for kde
 
 ```zsh
-#~/.config/environment.d/10-ssh-askpass.conf
+# ~/.config/environment.d/10-ssh-askpass.conf
 
 SSH_ASKPASS=/usr/bin/ksshaskpass
 SSH_ASKPASS_REQUIRE=prefer
@@ -633,9 +633,11 @@ SSH_AUTH_SOCK=$XDG_RUNTIME_DIR/ssh-agent.socket
 
 ### Intel Video
 
+```zsh
 yay -S --needed  vulkan-intel
 yay -S --needed libva-intel-driver (Hardware Video Acceleration)
 yay -S vulcan-intel intel-media-driver (Explicit)
+```
 
 Edit /etc/mkinitcpio.conf
 
@@ -672,11 +674,10 @@ Enable sddm service
 ### Firmware updates
 
 ```zsh
-yay -S fwupd
-yay -S --asdeps udisks2
-sudo systemctl enable --now udisks2.service
+yay -S --needed fwupd
+yay -S --needed --asdeps udisks2
 
-fwupdmgr get-updates
+sudo fwupdmgr get-updates
 ```
 
 ### Plymouth
