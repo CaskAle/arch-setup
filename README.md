@@ -667,7 +667,9 @@ yay -S --needed --asdeps ffmpegthumbs kdegraphics-thumbnailers keditbookmarks ki
 
 Enable sddm service
 
-`sudo systemctl enable --now sddm.service`
+```zsh
+sudo systemctl enable --now sddm.service
+```
 
 ## Other Stuff
 
@@ -693,60 +695,26 @@ sudo fwupdmgr get-updates
 - Rebuild initramfs:  
 `sudo mkinitcpio -P`
 
-- Set/query the default theme:  
-`plymouth-set-default-theme -R \<theme\>`  
-or use the kde settings app.
-
-- Rebuild initial RAM disk after any changes to the theme:  
-`mkinitcpio -P`
-
-### Java JDK
-
-`yay -S --needed jdk13-openjdk openjdk13-doc`
-
 ### Synology Drive
 
 Install from Flatpak
 
 ### Cockpit
 
+#### Install
+
 ```zsh
-# Install
 yay -S --needed cockpit
 yay -S --needed --asdeps cockpit-storaged cockpit-packagekit cockpit-podman cockpit-machines
 
-# Enable
 sudo systemctl enable --now cockpit.socket
 ```
 
-### Yubikey
-
-yay -S --needed libu2f-host to enable reading the device
-
-yay -S --needed yubico-pam to enable sign on with device
-
-Add this as the top line to /etc/pam.d/system-auth:
-
-auth sufficient pam_yubico.so id=1 authfile=/etc/yubikeys
-
-Create /etc/yubikeys
-
-troy:cccccckbdftk:ccccccjekvfu\
-root:cccccckbdftk:ccccccjekvfu
-
-<https://fedoraproject.org/wiki/Using_Yubikeys_with_Fedora>
-
 ### Printing and Scanning
 
-yay -S --needed cups hplip python-pyqt5 python-reportlab python-pillow
-rpcbind sane
+yay -S --needed cups
 
 sudo systemctl enable --now org.cups.cupsd
-
-sudo hp-setup
-
-Uncomment hpaio from the bottom of /etc/sane.d/dll.conf for scanner
-support
 
 ### Power and CPU Management
 
@@ -795,18 +763,3 @@ ram="65536" vram="65536" vgamem=\"65536\"
 
 For file sharing with virtio-fs:
 <https://libvirt.org/kbase/virtiofs.html>
-
-### DVD Ripping
-
-`yay -S handbrake libdvdcss dvd+rw-tools libx264`
-
-### Podman
-
-`yay -S --needed podman`
-
-### Things to look up
-
-- Java fonts look funny.
-- Password not working with yubikey enabled on kde lock screen.
-- Bridging with libvirt.
-- Intel GPU on libvirt
