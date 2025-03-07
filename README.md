@@ -198,7 +198,7 @@ mount /dev/nvme0n1p1 /mnt/boot
 ### Install the actual software
 
 ```zsh
-pacstrap -K /mnt base base-devel btrfs-progs git intel-ucode iw iwd linux linux-firmware linux-headers man-db man-pages micro networkmanager openssh plocate python reflector
+pacstrap -K /mnt base base-devel btrfs-progs git intel-ucode iw iwd linux linux-firmware linux-headers man-db man-pages micro networkmanager openssh plocate plymouth python reflector
 ```
 
 ### Create an **/etc/fstab** file
@@ -225,54 +225,60 @@ echo FONT=TER132B > /etc/vconsole.conf
 touch /etc/vconsole.conf
 ```
 
-#### Edit **/etc/mkinitcpio.conf**
-
-```zsh
-# Modules. i915 is for intel.  AMD may use alternative.
-MODULES=(i915)
-
-#Hooks.  sd-encrypt is only needed if doing disk encryption
-HOOKS=(systemd autodetect microcode modconf kms keyboard  sd-vconsole block  sd-encrypt filesystems fsck)
-```
-
-#### Re-build initial RAM filesystem
-
-```zsh
-mkinitcpio -P
-```
-
 #### Install systemd-boot bootloader
 
 ```zsh
 bootctl install
 ```
 
-##### Create/Edit the file: /boot/loader/entries/arch.conf
+#### Prepare for Unified Kernel Image
+
+##### Edit `/etc/mkinitcpio.conf`
 
 ```zsh
-#/boot/loader/entries/arch.conf
+# Modules. i915 is for intel.  AMD may use alternative.
 
-title Arch Linux
-linux /vmlinuz-linux
-initrd /initramfs-linux.img
+MODULES=(i915)
 
-# no encryption.  Only use the subvol rootflag if you created btrfs subvolumes.
-options root=/dev/nvme0n1p2 rootflags=subvol=@ rw quiet
+#Hooks.  sd-encrypt is only needed if doing disk encryption.
 
-# with full disk encryption.  Only use the subvol rootflag if you created btrfs subvolumes.
-options rd.luks.name=<luks-UUID>=crypt root=/dev/mapper/crypt rd.luks.options=timeout=0,discard rootflags=x-systemd.device-timeout=0,subvol=@ rw quiet
+HOOKS=(systemd plymouth autodetect microcode modconf kms keyboard  sd-vconsole block  sd-encrypt filesystems fsck)
 ```
 
-- Use `lsblk -fp` to determine the appropriate 'luks-UUID' for the luks encrypted device, **NOT** the root volume.
+##### Find the LUKS UUID for the encrypted device
 
-##### Create/Edit the file: /boot/loader/loader.conf
+Determine the uuid for the encrypted device. Use the uuid for the device, not the root volume.
 
 ```zsh
-#/boot/loader/loader.conf
+lsblk -fp
+```
 
-#timeout 0
-#console-mode keep
-default arch
+##### Create/Edit the file: `/etc/cmdline.d/99-boot-options.conf`
+
+This file contains the boot otions used to create the Unified Kernel Image (UKI).  If using disk encryption, replace "luks-uuid", in the file below, with value determined from lsblk -fp command.
+
+```zsh
+# /etc/cmdline.d/99-boot-options.conf
+
+# With encryption
+
+rd.luks.name="luks-uuid"=crypt
+rd.luks.options=timeout=0,discard
+root=/dev/mapper/crypt
+rootflags=x-systemd.device-timeout=0,subvol=@
+rw quiet splash
+
+# Without encryption
+
+root=/dev/nvme0n1p2
+rootflags=subvol=@ 
+rw quiet splash
+```
+
+#### Re-build initial RAM filesystem
+
+```zsh
+mkinitcpio -P
 ```
 
 #### Enable sudo for wheel group
@@ -297,7 +303,7 @@ passwd troy
 exit
 ```
 
-## Reboot to the new system
+#### Reboot to the new system
 
 ```zsh
 # Unmount the filesystems
@@ -335,12 +341,13 @@ I use British English but keep United States as well.
 - Edit the /etc/locale.gen file
 - Uncomment `en_GB.UTF-8`
 - Uncomment `en_US.UTF-8`
-- Then run:
 
-   ```zsh
-   sudo locale-gen
-   sudo localectl set-locale en_GB.UTF-8
-   ```
+Then run:
+
+```zsh
+sudo locale-gen
+sudo localectl set-locale en_GB.UTF-8
+```
 
 ### Enable some base systemd services
 
@@ -633,19 +640,15 @@ SSH_AUTH_SOCK=$XDG_RUNTIME_DIR/ssh-agent.socket
 
 ### Intel Video
 
+This section really needs consultation of the wiki, machine dependent.
+
 ```zsh
 yay -S --needed  vulkan-intel
 yay -S --needed libva-intel-driver (Hardware Video Acceleration)
 yay -S vulcan-intel intel-media-driver (Explicit)
 ```
 
-Edit /etc/mkinitcpio.conf
-
-Modules: Add i915 xe
-
-Create or copy /etc/modprobe.d/intel.conf
-
-#### This really needs consultation of the wiki, machine dependent
+#### Create or copy `/etc/modprobe.d/intel.conf`
 
 ### KDE/Plasma
 
@@ -660,7 +663,7 @@ yay -S --needed plasma
 #### Now install the kde applications
 
 ```zsh
-yay -S --needed dolphin dolphin-plugins gwenview kate kdialog kfind khelpcenter konsole kwalletmanager kaccounts-providers kcolorchooser kcron kgpg kjournald kio-gdrive kompare ksystemlog kweather markdownpart okular
+yay -S --needed ark dolphin dolphin-plugins gwenview kate kdialog kfind khelpcenter konsole kwalletmanager kaccounts-providers kcolorchooser kcron kgpg kjournald kio-gdrive kompare ksystemlog kweather markdownpart okular
 
 yay -S --needed --asdeps ffmpegthumbs kdegraphics-thumbnailers keditbookmarks kio-admin poppler-data purpose
 ```
@@ -682,22 +685,11 @@ yay -S --needed --asdeps udisks2
 sudo fwupdmgr get-updates
 ```
 
-### Plymouth
+### Install Flatpaks
 
-- Install:  
-`yay -S --needed plymouth`
-
-- Add `splash` to options in `/boot/loader/entries/arch.conf`
-
-- Update the HOOKS in: `/etc/mkinitcpio.conf`  
-`HOOKS=(systemd plymouth ...)`
-
-- Rebuild initramfs:  
-`sudo mkinitcpio -P`
-
-### Synology Drive
-
-Install from Flatpak
+- Synology Drive
+- LibreOffice
+- Signal
 
 ### Cockpit
 
@@ -712,42 +704,31 @@ sudo systemctl enable --now cockpit.socket
 
 ### Printing and Scanning
 
+```zsh
 yay -S --needed cups
 
 sudo systemctl enable --now org.cups.cupsd
+```
 
 ### Power and CPU Management
 
-`yay -S --asdeps tuned-ppd`
+```zsh
+yay -S --asdeps tuned-ppd
 
-or  
-`yay -S --asdeps power-profiles-daemon`
+# or
 
-### LibreOffice
-
-yay -S --needed libreoffice-fresh libreoffice-fresh-en-gb
-
-yay -S --needed libmythes mythes-en for thesarus
-
-yay -S --needed hunspell hunspell-en_GB hunspell-en_US for spell check
-
-yay -S --needed hyphen hyphen-en for hyphenation
-
-Enable Writing Aids under Language Settings/Writing Aids
-
-Enable Java under LibreOffice/Advanced
-
-Edit `/etc/profile.d/libreoffice-fresh.sh` to enable QT look and feel
+yay -S --asdeps power-profiles-daemon
+```
 
 ### KVM/Qemu/Libvirt
 
-yay -S --needed libvirt qemu virt-manager
-
-yay -S --needed ovmf to enable EFI in guests
-
-yay -S --needed ebtables dnsmasq for the default NAT/DHCP networking.
+```zsh
+yay -S --needed libvirt qemu-desktop virt-manager virt-install edk2-ovmf dnsmasq swtpm virt-viewer
 
 yay -S --needed bridge-utils for bridged networking.
+
+sudo systemctl enable --now libvirtd.socket
+```
 
 Enable nested virtualisation via /etc/modprobe.d/kvm.conf.  Create or copy.
 
