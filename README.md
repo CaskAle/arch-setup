@@ -61,9 +61,9 @@ iwctl station <device> connect <SSID>
 ping archlinux.org
 ```
 
-## Prepare the Disks
+### Prepare the Disks
 
-### Partitioning
+#### Partitioning
 
 - Ensure that the partition table uses GPT format.
 - Ensure that there is a 1Gb **efi** partition formatted as FAT32 and flagged as type **efi**.
@@ -109,7 +109,7 @@ w
 q
 ```
 
-### Encryption
+#### Encryption
 
 Skip this section if you are not enabling full disk encryption.
 
@@ -126,7 +126,7 @@ cryptsetup -v luksFormat --type luks2 /dev/nvme0n1p2
 cryptsetup open /dev/nvme0n1p2 crypt --allow-discards --persistent
 ```
 
-### Format the volumes
+#### Format the volumes
 
 Examples given below assume btrfs file system. Adjust as required. Optional instructions are included for creating btrfs subvolumes.
 
@@ -144,7 +144,7 @@ mkfs.btrfs -L root /dev/mapper/crypt
 
 ```
 
-### Mount the volumes
+#### Mount the volumes
 
 ```zsh
 # Mount root filesystem onto /mnt
@@ -193,15 +193,15 @@ mkdir -p /mnt/boot
 mount /dev/nvme0n1p1 /mnt/boot
 ```
 
-## Install the Minimal System
+## Prepare the Minimal System
 
 ### Install the actual software
 
 ```zsh
-pacstrap -K /mnt base base-devel btrfs-progs git intel-ucode iw iwd linux linux-firmware linux-headers man-db man-pages micro networkmanager openssh plocate plymouth python reflector
+pacstrap -K /mnt base base-devel btrfs-progs git intel-ucode iw iwd linux linux-firmware linux-headers man-db man-pages micro networkmanager openssh plocate plymouth python reflector zram-generator
 ```
 
-### Create an **/etc/fstab** file
+### Create the `/etc/fstab** file`
 
 ```zsh
 genfstab -U /mnt > /mnt/etc/fstab
@@ -213,7 +213,7 @@ genfstab -U /mnt > /mnt/etc/fstab
 arch-chroot /mnt
 ```
 
-#### Adjust vconsole (if needed)
+### Adjust vconsole (if needed)
 
 In order to ensure that the console font is a readable size upon booting into the new system, execute the following.  You should only need to do this if you needed to do it upon initial boot.
 
@@ -225,15 +225,15 @@ echo FONT=TER132B > /etc/vconsole.conf
 touch /etc/vconsole.conf
 ```
 
-#### Install systemd-boot bootloader
+### Install the systemd-boot bootloader
 
 ```zsh
 bootctl install
 ```
 
-#### Prepare for Unified Kernel Image
+### Prepare the Unified Kernel Image
 
-##### Edit `/etc/mkinitcpio.conf`
+#### Edit `/etc/mkinitcpio.conf`
 
 ```zsh
 # Modules. i915 is for intel.  AMD may use alternative.
@@ -245,7 +245,7 @@ MODULES=(i915)
 HOOKS=(systemd plymouth autodetect microcode modconf kms keyboard  sd-vconsole block  sd-encrypt filesystems fsck)
 ```
 
-##### Find the LUKS UUID for the encrypted device
+#### Find the LUKS UUID for the encrypted device
 
 Determine the uuid for the encrypted device. Use the uuid for the device, not the root volume.
 
@@ -253,7 +253,7 @@ Determine the uuid for the encrypted device. Use the uuid for the device, not th
 lsblk -fp
 ```
 
-##### Create/Edit the file: `/etc/cmdline.d/99-boot-options.conf`
+#### Create/Edit the file: `/etc/cmdline.d/99-boot-options.conf`
 
 This file contains the boot otions used to create the Unified Kernel Image (UKI).  If using disk encryption, replace "luks-uuid", in the file below, with value determined from lsblk -fp command.
 
@@ -281,13 +281,13 @@ rw quiet splash
 mkinitcpio -P
 ```
 
-#### Enable sudo for wheel group
+### Enable sudo for wheel group
 
 ```zsh
 echo '%wheel ALL=(ALL) ALL' > /etc/sudoers.d/00_wheel
 ```
 
-#### Create a user with admin rights (troy)
+### Create a user with admin rights (troy)
 
 If you do not set a root passwd, it is imerative that a sudo enabled user be created for administrative (wheel group) access.
 
@@ -297,13 +297,13 @@ useradd -m -u 1000 -g troy -G wheel troy
 passwd troy
 ```
 
-#### Exit the chroot configuration
+### Exit the chroot configuration
 
 ```zsh
 exit
 ```
 
-#### Reboot to the new system
+### Reboot to the new system
 
 ```zsh
 # Unmount the filesystems
@@ -463,10 +463,11 @@ cd yay
 makepkg -si
 ```
 
-### Configure Zsh Shell
+### Configure Zsh Shell and Starship Prompt
+
+#### Install 
 
 ```zsh
-# Install
 yay -S --needed zsh-autocomplete zsh-autosuggestions zsh-completions zsh-history-substring-search zsh-syntax-highlighting
 
 # Nerd font
@@ -574,6 +575,8 @@ source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
 ```
+
+#### Link .zshrc to root
 
 ### Enable Bluetooth
 
