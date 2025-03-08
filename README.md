@@ -336,12 +336,12 @@ sudo hostnamectl hostname <hostname>
 
 ### Set the locale
 
-I use British English but keep United States as well.
+#### Edit the `/etc/locale.gen` file and uncomment the following lines
 
-#### Edit the `/etc/locale.gen` file
-
-- Uncomment `en_GB.UTF-8`
-- Uncomment `en_US.UTF-8`
+```zsh
+#en_GB.UTF-8
+#en_US.UTF-8
+```
 
 #### Then run
 
@@ -352,11 +352,11 @@ sudo localectl set-locale en_GB.UTF-8
 
 ### Enable some base systemd services
 
-```zsh
-# Enable the fstrim systemd timer to periodically trim the SSD:
-sudo systemctl enable --now fstrim.timer
+- Enable the fstrim systemd timer to periodically trim the SSD
+- Enable systemd-boot automatic update service
 
-# Enable systemd-boot automatic update service
+```zsh
+sudo systemctl enable --now fstrim.timer
 sudo systemctl enable --now systemd-boot-update.service
 ```
 
@@ -386,7 +386,7 @@ sudo systemctl enable --now systemd-resolved.service
 sudo systemctl enable --now NetworkManager.service
 ```
 
-#### Connect to a wifi network using terminal based network config tool
+#### Connect to a wifi network
 
 ```zsh
 sudo nmtui
