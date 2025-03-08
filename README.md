@@ -709,9 +709,11 @@ yay -S --needed cockpit
 yay -S --needed --asdeps cockpit-storaged cockpit-packagekit cockpit-podman cockpit-machines
 ```
 
-#### Copy the wildcard certificate to `\etc\cockpit\ws=certs.d`
+#### Copy the wildcard certificate to `\etc\cockpit\ws=certs.d\`
 
 ```zsh
+sudo cp ...\etc\cockpit\ws=certs.d\
+sudo cp ...\etc\cockpit\ws=certs.d\
 ```
 
 #### Enable the `cockpit.socket`
