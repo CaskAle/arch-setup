@@ -707,7 +707,16 @@ sudo fwupdmgr get-updates
 ```zsh
 yay -S --needed cockpit
 yay -S --needed --asdeps cockpit-storaged cockpit-packagekit cockpit-podman cockpit-machines
+```
 
+#### Copy the wildcard certificate to `\etc\cockpit\ws=certs.d`
+
+```zsh
+```
+
+#### Enable the `cockpit.socket`
+
+```zsh
 sudo systemctl enable --now cockpit.socket
 ```
 
@@ -715,7 +724,6 @@ sudo systemctl enable --now cockpit.socket
 
 ```zsh
 yay -S --needed cups
-
 sudo systemctl enable --now org.cups.cupsd
 ```
 
