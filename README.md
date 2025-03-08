@@ -33,7 +33,7 @@ Now that you have an installation media, simply boot your computer from the this
 fbcon=font:TER132b
 ```
 
-### Make sure that the system is in UEFI mode  
+### Make sure that the system is in uefi mode  
 
 ```Zsh
 # If this command returns 64 or 32 then you are in UEFI.
@@ -61,7 +61,7 @@ iwctl station <device> connect <SSID>
 ping archlinux.org
 ```
 
-### Prepare the Disks
+### Prepare The Disks
 
 #### Partitioning
 
@@ -130,7 +130,7 @@ cryptsetup open /dev/nvme0n1p2 crypt --allow-discards --persistent
 
 Examples given below assume btrfs file system. Adjust as required. Optional instructions are included for creating btrfs subvolumes.
 
-**Use extreme caution formatting the EFI partition when in a dual boot scenario.**
+> Note: Use extreme caution formatting the EFI partition when in a dual boot scenario.
 
 ```zsh
 # Format the EFI partition as fat32 (label = boot).
@@ -193,7 +193,7 @@ mkdir -p /mnt/boot
 mount /dev/nvme0n1p1 /mnt/boot
 ```
 
-## Prepare the Minimal System
+## Prepare The Minimal System
 
 ### Install the actual software
 
@@ -231,7 +231,7 @@ touch /etc/vconsole.conf
 bootctl install
 ```
 
-### Prepare the Unified Kernel Image
+### Prepare the unified kernel image
 
 #### Edit `/etc/mkinitcpio.conf`
 
@@ -338,11 +338,12 @@ sudo hostnamectl hostname <hostname>
 
 I use British English but keep United States as well.
 
-- Edit the /etc/locale.gen file
+#### Edit the `/etc/locale.gen` file
+
 - Uncomment `en_GB.UTF-8`
 - Uncomment `en_US.UTF-8`
 
-Then run:
+#### Then run
 
 ```zsh
 sudo locale-gen
@@ -361,18 +362,16 @@ sudo systemctl enable --now systemd-boot-update.service
 
 ### Configure Networking
 
-#### Enable the iwd backend for NetworkManager  (Note: wpa 3 not working under iwd)
-
-Create the `/etc/NetworkManager/conf.d/iwd_backend.conf` file.
+#### Create the `/etc/NetworkManager/conf.d/iwd_backend.conf` file
 
 ```zsh
-#/etc/NetworkManager/conf.d/iwd_backend.conf
+# /etc/NetworkManager/conf.d/iwd_backend.conf
 
 [device]
 wifi.backend=iwd
 ```
 
-Configure the systemd-resolved DNS
+#### Configure the systemd-resolved dns
 
 ```zsh
 sudo systemctl stop NetworkManager
@@ -380,14 +379,14 @@ sudo rm /etc/resolv.conf
 sudo ln -sf ../run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
 ```
 
-Start the services
+#### Start the services
 
 ```zsh
 sudo systemctl enable --now systemd-resolved.service
 sudo systemctl enable --now NetworkManager.service
 ```
 
-#### Connect to a WiFi network using terminal based network config tool
+#### Connect to a wifi network using terminal based network config tool
 
 ```zsh
 sudo nmtui
@@ -395,19 +394,19 @@ sudo nmtui
 
 ### Reflector will build a customized mirrorlist
 
-#### Edit the /etc/xdg/reflector/reflector.conf file
+#### Edit the `/etc/xdg/reflector/reflector.conf` file
 
 ```zsh
 --country United States
 ```
 
-#### Enable the reflector.timer
+#### Enable the `reflector.timer`
 
 ```zsh
 sudo systemctl enable --now reflector.timer
 ```
 
-### Customize Pacman and perform system update
+### Customize pacman and perform system update
 
 #### Edit the `/etc/pacman.conf` file and uncomment the following lines
 
@@ -431,7 +430,7 @@ sudo systemctl enable --now reflector.timer
 sudo pacman -Syyu
 ```
 
-### Customise Makepkg
+### Customise makepkg
 
 Edit `/etc/makepkg.conf` file and uncomment
 
@@ -439,7 +438,7 @@ Edit `/etc/makepkg.conf` file and uncomment
 #BUILDDIR=/tmp/makepkg
 ```
 
-### Configure Git
+### Configure git
 
 Install git
 
@@ -453,7 +452,7 @@ git config --global user.name "Your Name"
 git config --global init.default.Branch main
 ```
 
-### Install yay pacman helper from AUR
+### Install yay pacman helper from aur
 
 ```zsh
 mkdir ~/aur
@@ -463,9 +462,9 @@ cd yay
 makepkg -si
 ```
 
-### Configure Zsh Shell and Starship Prompt
+### Configure zsh Shell and starship prompt
 
-#### Install 
+#### Install
 
 ```zsh
 yay -S --needed zsh-autocomplete zsh-autosuggestions zsh-completions zsh-history-substring-search zsh-syntax-highlighting
@@ -578,7 +577,7 @@ source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zs
 
 #### Link .zshrc to root
 
-### Enable Bluetooth
+### Enable bluetooth
 
 ```zsh
 yay -S --needed bluez
@@ -641,7 +640,7 @@ SSH_ASKPASS_REQUIRE=prefer
 SSH_AUTH_SOCK=$XDG_RUNTIME_DIR/ssh-agent.socket
 ```
 
-### Intel Video
+### Intel video
 
 This section really needs consultation of the wiki, machine dependent.
 
@@ -688,7 +687,7 @@ yay -S --needed --asdeps udisks2
 sudo fwupdmgr get-updates
 ```
 
-### Install Flatpaks
+### Install flatpaks
 
 - Synology Drive
 - LibreOffice
@@ -696,7 +695,7 @@ sudo fwupdmgr get-updates
 
 ### Cockpit
 
-#### Install
+#### Install cockpit and plugins
 
 ```zsh
 yay -S --needed cockpit
