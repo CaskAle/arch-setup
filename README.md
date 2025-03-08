@@ -599,7 +599,7 @@ sudo systemctl enable --now bluetooth
 export SSH_ASKPASS="/usr/bin/ksshaskpass"
 ```
 
-#### Create/Edit `/etc/ssh/sshd_config.d/10-harden-authentication.conf`
+#### Create `/etc/ssh/sshd_config.d/10-harden-authentication.conf`
 
 ```zsh
 # /etc/ssh/sshd_config.d/10-harden-authentication.conf
