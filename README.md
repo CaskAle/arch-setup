@@ -419,10 +419,10 @@ sudo systemctl enable --now reflector.timer
 
 #### Add a new repo for `[kde-unstable]` before the `[core-testing]` repo
 
-   ```zsh  
-   [kde-unstable]
-   Include = /etc/pacman.d/mirrorlist
-   ```
+```zsh  
+[kde-unstable]
+Include = /etc/pacman.d/mirrorlist
+```
 
 #### Perform a full system update using the new settings
 
@@ -432,7 +432,7 @@ sudo pacman -Syyu
 
 ### Customise makepkg
 
-Edit `/etc/makepkg.conf` file and uncomment
+#### Edit `/etc/makepkg.conf` file and uncomment
 
 ```zsh
 #BUILDDIR=/tmp/makepkg
@@ -440,19 +440,21 @@ Edit `/etc/makepkg.conf` file and uncomment
 
 ### Configure git
 
-Install git
+#### Install git zsh completions
 
 ```zsh
-# Install git zsh completions
 sudo pacman -S --needed --asdeps git-zsh-completion
+```
 
-# Configure user settings
+#### Configure user settings
+
+```zsh
 git config --global user.email "you@example.com"
 git config --global user.name "Your Name"
 git config --global init.default.Branch main
 ```
 
-### Install yay pacman helper from aur
+### Install the yay pacman helper from aur
 
 ```zsh
 mkdir ~/aur
@@ -464,18 +466,19 @@ makepkg -si
 
 ### Configure zsh Shell and starship prompt
 
-#### Install
+#### Install the code
 
 ```zsh
 yay -S --needed zsh-autocomplete zsh-autosuggestions zsh-completions zsh-history-substring-search zsh-syntax-highlighting
 
-# Nerd font
 yay -S --needed ttf-firacode-nerd
 
-# Starship prompt
 yay -S --needed starship
+```
 
-# Ensure that root and troy use zsh shell.
+#### Ensure that root and troy use zsh shell
+
+```zsh
 sudo chsh root -s /bin/zsh
 chsh -s /bin/zsh
 ```
@@ -575,7 +578,11 @@ source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zs
 
 ```
 
-#### Link .zshrc to root
+#### Copy `~/.zshrc` to `/etc/zsh/`
+
+```zsh
+sudo cp /home/troy/.zshrc /etc/zsh/zshrc
+```
 
 ### Enable bluetooth
 
