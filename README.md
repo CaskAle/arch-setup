@@ -198,7 +198,7 @@ mount /dev/nvme0n1p1 /mnt/boot
 ### Install the actual software
 
 ```zsh
-pacstrap -K /mnt base base-devel btrfs-progs git intel-ucode iw iwd linux linux-firmware linux-headers man-db man-pages micro networkmanager openssh plocate plymouth python reflector zram-generator
+pacstrap -K /mnt base base-devel btrfs-progs firewalld git intel-ucode iw iwd linux linux-firmware linux-headers man-db man-pages micro networkmanager openssh plocate plymouth python reflector zram-generator
 ```
 
 ### Create the `/etc/fstab** file`
@@ -297,6 +297,31 @@ useradd -m -u 1000 -g troy -G wheel troy
 passwd troy
 ```
 
+### Enable zram swap
+
+Create the following files and zram swap will be enabled on the next boot.
+
+#### Create the file `/etc/systemd/zram-generator.conf`
+
+```zsh
+# /etc/systemd/zram-generator.conf file.
+
+[zram0]
+zram-size = ram
+compression-algorithm =zstd
+```
+
+#### Create the file `/etc/sysctl.d/99-zram-parameters.conf`
+
+```zsh
+# /etc/sysctl.d/99-zram-parameters.conf
+
+vm.swappiness = 180
+vm.watermark_boost_factor = 0
+vm.watermark_scale_factor = 125
+vm.page-cluster = 0
+```
+
 ### Exit the chroot configuration
 
 ```zsh
@@ -360,7 +385,7 @@ sudo systemctl enable --now fstrim.timer
 sudo systemctl enable --now systemd-boot-update.service
 ```
 
-### Configure Networking
+### Configure Networking (iwd and NetworkManager)
 
 #### Create the `/etc/NetworkManager/conf.d/iwd_backend.conf` file
 
@@ -724,10 +749,19 @@ sudo systemctl enable --now cockpit.socket
 
 ### Printing and Scanning
 
+#### First, install and enable the software
+
 ```zsh
 yay -S --needed cups
-sudo systemctl enable --now org.cups.cupsd
+sudo systemctl enable --now cups.socket
 ```
+
+#### Then, create a printer config
+
+1. Load the website `localhost:631` and sign in as a user with admin rights
+1. Select `Add Printer` from the `Administration` tab
+1. Use the address format: `ipp://<printer ip>:631/ipp/print`
+1. Use the `IPP Everywhere` driver located under the `Generic` make
 
 ### Power and CPU Management
 
