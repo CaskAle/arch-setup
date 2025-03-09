@@ -201,7 +201,7 @@ mount /dev/nvme0n1p1 /mnt/boot
 pacstrap -K /mnt base base-devel btrfs-progs firewalld git intel-ucode iw iwd linux linux-firmware linux-headers man-db man-pages micro networkmanager openssh plocate plymouth python reflector zram-generator
 ```
 
-### Create the `/etc/fstab** file`
+### Create the `/etc/fstab` file
 
 ```zsh
 genfstab -U /mnt > /mnt/etc/fstab
@@ -688,7 +688,7 @@ yay -S vulcan-intel intel-media-driver (Explicit)
 
 #### Install plasma group
 
-Some issues existed around this group from kde_unstable.  Lots did not get installed
+> Some issues existed around this group from kde_unstable.  Lots did not get installed
 
 ```zsh
 yay -S --needed plasma
