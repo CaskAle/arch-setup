@@ -368,14 +368,25 @@ sudo locale-gen
 sudo localectl set-locale en_GB.UTF-8
 ```
 
-### Enable some base systemd services
-
-- Enable the fstrim systemd timer to periodically trim the SSD
-- Enable systemd-boot automatic update service
+### Enable `fstrim.timer` to trim ssd
 
 ```zsh
 sudo systemctl enable --now fstrim.timer
+```
+
+### Enable `systemd-boot-update.service` 
+
+```zsh
 sudo systemctl enable --now systemd-boot-update.service
+```
+
+### Configure and enable the `systemd-resolved.service` dns
+
+```zsh
+sudo systemctl stop NetworkManager.service
+sudo rm /etc/resolv.conf
+sudo ln -sf ../run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+sudo systemctl enable --now systemd-resolved.service
 ```
 
 ### Configure Networking (iwd and NetworkManager)
@@ -389,18 +400,9 @@ sudo systemctl enable --now systemd-boot-update.service
 wifi.backend=iwd
 ```
 
-#### Configure the systemd-resolved dns
+#### Start the `NetworkManager.service`
 
 ```zsh
-sudo systemctl stop NetworkManager
-sudo rm /etc/resolv.conf
-sudo ln -sf ../run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
-```
-
-#### Start the services
-
-```zsh
-sudo systemctl enable --now systemd-resolved.service
 sudo systemctl enable --now NetworkManager.service
 ```
 
@@ -415,7 +417,7 @@ sudo nmtui
 #### Edit the `/etc/xdg/reflector/reflector.conf` file
 
 ```zsh
---country United States
+--country US
 ```
 
 #### Enable the `reflector.timer`
