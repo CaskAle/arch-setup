@@ -133,8 +133,8 @@ Examples given below assume btrfs file system. Adjust as required. Optional inst
 > Note: Use extreme caution formatting the EFI partition when in a dual boot scenario.
 
 ```zsh
-# Format the EFI partition as fat32 (label = boot).
-mkfs.fat -n boot -F32 /dev/nvme0n1p1
+# Format the EFI partition as fat32 (label = efi).
+mkfs.fat -n efi -F32 /dev/nvme0n1p1
 
 # Format the root partition as btrfs (label = root).
 mkfs.btrfs -L root /dev/nvme0n1p2
@@ -183,14 +183,14 @@ mount -o compress=zstd,subvol=@home /dev/mapper/crypt /mnt/home
 
 ```
 
-#### Mount the efi filesystem onto boot
+#### Mount the efi filesystem onto `/efi`
 
 ```zsh
 # Create the boot directory.
-mkdir -p /mnt/boot
+mkdir -p /mnt/efi
 
 # Mount the efi filesystem.
-mount /dev/nvme0n1p1 /mnt/boot
+mount /dev/nvme0n1p1 /mnt/efi
 ```
 
 ## Prepare The Minimal System
@@ -266,13 +266,13 @@ rd.luks.name="luks-uuid"=crypt
 rd.luks.options=timeout=0,discard
 root=/dev/mapper/crypt
 rootflags=x-systemd.device-timeout=0,subvol=@
-rw quiet splash
+rw quiet splash bgrt_disable
 
 # Without encryption
 
 root=/dev/nvme0n1p2
 rootflags=subvol=@ 
-rw quiet splash
+rw quiet splash bgrt_disable
 ```
 
 #### Re-build initial RAM filesystem
