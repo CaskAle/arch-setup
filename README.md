@@ -233,16 +233,16 @@ bootctl install
 
 ### Prepare the unified kernel image
 
-#### Edit `/etc/mkinitcpio.conf`
+#### Create `/etc/mkinitcpio.conf.d/99-mkinitcpio.conf`
 
 ```zsh
-# Modules. i915 is for intel.  AMD may use alternative.
+# /etc/mkinitcpio.conf.d/99-mkinitcpio.conf
 
 MODULES=(i915)
 
-#Hooks.  sd-encrypt is only needed if doing disk encryption.
+# sd-encrypt is only needed if doing disk encryption
 
-HOOKS=(systemd plymouth autodetect microcode modconf kms keyboard  sd-vconsole block  sd-encrypt filesystems fsck)
+HOOKS=(systemd plymouth autodetect microcode modconf kms keyboard  sd-vconsole block sd-encrypt filesystems fsck) 
 ```
 
 #### Find the LUKS UUID for the encrypted device
@@ -271,7 +271,7 @@ rw quiet splash bgrt_disable
 # Without encryption
 
 root=/dev/nvme0n1p2
-rootflags=subvol=@ 
+rootflags=subvol=@
 rw quiet splash bgrt_disable
 ```
 
@@ -361,16 +361,9 @@ sudo hostnamectl hostname <hostname>
 
 ### Set the locale
 
-#### Edit the `/etc/locale.gen` file and uncomment the following lines
-
 ```zsh
-#en_GB.UTF-8
-#en_US.UTF-8
-```
-
-#### Then run
-
-```zsh
+sudo sed -i '/#en_GB.UTF-8 UTF-8/s/^#//g' /etc/locale.gen
+sudo sed -i '/#en_US.UTF-8 UTF-8/s/^#//g' /etc/locale.gen
 sudo locale-gen
 sudo localectl set-locale en_GB.UTF-8
 ```
