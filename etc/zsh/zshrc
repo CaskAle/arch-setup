@@ -1,9 +1,9 @@
-# ~/.zshrc
 
 # History Settings
 HISTFILE=~/.zsh_history
 HISTSIZE=2000
 SAVEHIST=2000
+# ~/.zshrc
 setopt SHARE_HISTORY
 setopt HIST_IGNORE_ALL_DUPS
 setopt HIST_EXPIRE_DUPS_FIRST
@@ -18,6 +18,7 @@ eval "$(starship init zsh)"
 zstyle 'completion::complete:*' gain-privileges 1
 zstyle ':completion:*' list-colors ''
 
+export PATH=~/data/bin:$PATH
 export EDITOR=micro
 export SSH_ASKPASS="/usr/bin/ksshaskpass"
  
@@ -79,7 +80,8 @@ zle -N down-line-or-beginning-search
 [[ -n "${key[Down]}" ]] && bindkey -- "${key[Down]}" down-line-or-beginning-search
 
 # zsh-autosuggestions
-#ZSH_AUTOSUGGEST_STRATEGY=(history completion)
+ZSH_AUTOSUGGEST_STRATEGY=(history completion)
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE="fg=246"
 source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 
 # zsh-autocomplete
@@ -87,3 +89,9 @@ source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 
 # zsh-syntax-highlighting (MUST BE LAST)
 source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+
+# Enable oc expansion
+if [ $commands[oc] ]; then
+  source <(oc completion zsh)
+  compdef _oc oc
+fi
