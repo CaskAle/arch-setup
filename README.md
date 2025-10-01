@@ -226,7 +226,10 @@ mount -o defaults,fmask=0077,dmask=0077 /dev/nvme0n1p1 /mnt/efi
 ### Install the actual software
 
 ```zsh
-pacstrap -K /mnt base base-devel btrfs-progs fwupd git intel-ucode iw iwd linux-firmware linux-zen linux-zen-headers man-db man-pages micro networkmanager openssh plocate python reflector sof-firmware udisks2
+pacstrap -K /mnt base base-devel btrfs-progs fwupd git \
+intel-ucode iw iwd linux-firmware linux-zen linux-zen-headers \
+man-db man-pages micro networkmanager openssh plocate python \
+reflector sof-firmware udisks2
 ```
 
 ### Create the `/etc/fstab` file
