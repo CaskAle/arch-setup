@@ -35,8 +35,9 @@ fbcon=font:TER132b
 
 ### Make sure that the system is in uefi mode  
 
+If this command returns 64 or 32 then you are in UEFI.
+
 ```Zsh
-# If this command returns 64 or 32 then you are in UEFI.
 cat /sys/firmware/efi/fw_platform_size 
 ```
 
@@ -109,20 +110,29 @@ w
 q
 ```
 
-#### Encryption
+#### Enable Disk Encryption
 
 Skip this section if you are not enabling full disk encryption.
 
+##### Initialize the dm-crypt module
+
 ```zsh
-# Initialize the dm-crypt module.
 modprobe dm-crypt
+```
 
-# If encryption is already set up on the partition and you wish to preserve the existing file systems, skip the following command which initializes the crypt. The device should be your root filesystem created above. # In my case, /dev/nvme0n1p2
+#### Format The Crypt
 
+If encryption is already set up on the partition and you wish to preserve the existing file systems, skip the following command which initializes the crypt. The device should be your root filesystem created above. In my case, /dev/nvme0n1p2
+
+```zsh
 cryptsetup -v luksFormat --type luks2 /dev/nvme0n1p2
+```
 
-# To open the crypt.  The word 'crypt' represents the name of the encrypted vault. I use 'crypt', adjust if desired.
+##### Open the crypt
 
+The word 'crypt' represents the name of the encrypted vault. I use 'crypt', adjust if desired.
+
+```zsh
 cryptsetup open /dev/nvme0n1p2 crypt --allow-discards --persistent
 ```
 
@@ -130,27 +140,37 @@ cryptsetup open /dev/nvme0n1p2 crypt --allow-discards --persistent
 
 Examples given below assume btrfs file system. Adjust as required. Optional instructions are included for creating btrfs subvolumes.
 
-> Note: Use extreme caution formatting the EFI partition when in a dual boot scenario.
+> **_Note:_** Use extreme caution formatting the EFI partition when in a dual boot scenario.
+
+The EFI Partition
 
 ```zsh
-# Format the EFI partition as fat32 (label = efi).
 mkfs.fat -n efi -F32 /dev/nvme0n1p1
+```
 
-# Format the root partition as btrfs (label = root).
-mkfs.btrfs -L root /dev/nvme0n1p2
+Root With Disk Encryption
 
-# Or, if using disk encryption
+```zsh
 mkfs.btrfs -L root /dev/mapper/crypt
+```
 
+Root Without Disk Encryption
+
+```zsh
+mkfs.btrfs -L root /dev/nvme0n1p2
 ```
 
 #### Mount the volumes
 
-```zsh
-# Mount root filesystem onto /mnt
-mount -o compress=zstd /dev/nvme0n1p2 /mnt
+Root Without Disk Encryption
 
-# or, if encryped
+```zsh
+mount -o compress=zstd /dev/nvme0n1p2 /mnt
+```
+
+Root With Disk Encryption
+
+```zsh
 mount -o compress=zstd /dev/mapper/crypt /mnt
 ```
 
@@ -159,38 +179,46 @@ mount -o compress=zstd /dev/mapper/crypt /mnt
 Skip this section if you do not want to create btrfs subvolumes.
 
 ```zsh
-# Create the subvolumes.
 btrfs subvolume create /mnt/@
 btrfs subvolume create /mnt/@home
-
-# Unmount the old root filesystem.
 umount /mnt
-
-# Mount the new root subvolume.
-mount -o compress=zstd,subvol=@ /dev/nvme0n1p2 /mnt
-
-# or
-mount -o compress=zstd,subvol=@ /dev/mapper/crypt /mnt
-
-# Create the home directory.
-mkdir -p /mnt/home
-
-# Mount the home subvolume.
-mount -o compress=zstd,subvol=@home /dev/nvme0n1p2 /mnt/home
-
-# or
-mount -o compress=zstd,subvol=@home /dev/mapper/crypt /mnt/home
-
 ```
 
-#### Mount the efi filesystem onto `/efi`
+Re-mount without disk encryption
 
 ```zsh
-# Create the boot directory.
-mkdir -p /mnt/efi
+mount -o compress=zstd,subvol=@ /dev/nvme0n1p2 /mnt
+```
 
-# Mount the efi filesystem.
-mount /dev/nvme0n1p1 /mnt/efi
+Re-mount with disk encryption
+
+```zsh
+mount -o compress=zstd,subvol=@ /dev/mapper/crypt /mnt
+```
+
+#### The home partition
+
+```zsh
+mkdir -p /mnt/home
+```
+
+No Encryption
+
+```zsh
+mount -o compress=zstd,subvol=@home /dev/nvme0n1p2 /mnt/home
+```
+
+With Encryption
+
+```zsh
+mount -o compress=zstd,subvol=@home /dev/mapper/crypt /mnt/home
+```
+
+#### The efi partition
+
+```zsh
+mkdir -p /mnt/efi
+mount -o defaults,fmask=0077,dmask=0077 /dev/nvme0n1p1 /mnt/efi
 ```
 
 ## Prepare The Minimal System
@@ -198,7 +226,7 @@ mount /dev/nvme0n1p1 /mnt/efi
 ### Install the actual software
 
 ```zsh
-pacstrap -K /mnt base base-devel btrfs-progs firewalld git intel-ucode iw iwd linux linux-firmware linux-headers man-db man-pages micro networkmanager openssh plocate plymouth python reflector zram-generator
+pacstrap -K /mnt base base-devel btrfs-progs fwupd git intel-ucode iw iwd linux-firmware linux-zen linux-zen-headers man-db man-pages micro networkmanager openssh plocate python reflector sof-firmware udisks2
 ```
 
 ### Create the `/etc/fstab` file
@@ -217,11 +245,15 @@ arch-chroot /mnt
 
 In order to ensure that the console font is a readable size upon booting into the new system, execute the following.  You should only need to do this if you needed to do it upon initial boot.
 
-```zsh
-# Set a console font
-echo FONT=TER132B > /etc/vconsole.conf
+Set a Console Font
 
-# Otherwise, touch /etc/vconsole.conf to make sure it exists
+```zsh
+echo FONT=TER132B > /etc/vconsole.conf
+```
+
+Otherwise, touch /etc/vconsole.conf to make sure it exists
+
+```zsh
 touch /etc/vconsole.conf
 ```
 
@@ -242,7 +274,7 @@ MODULES=(i915)
 
 # sd-encrypt is only needed if doing disk encryption
 
-HOOKS=(systemd plymouth autodetect microcode modconf kms keyboard  sd-vconsole block sd-encrypt filesystems fsck) 
+HOOKS=(base systemd autodetect microcode modconf kms keyboard block sd-encrypt filesystems fsck) 
 ```
 
 #### Find the LUKS UUID for the encrypted device
@@ -257,6 +289,8 @@ lsblk -fp
 
 This file contains the boot otions used to create the Unified Kernel Image (UKI).  If using disk encryption, replace "luks-uuid", in the file below, with value determined from lsblk -fp command.
 
+##### With Disk Encryption
+
 ```zsh
 # /etc/cmdline.d/99-boot-options.conf
 
@@ -267,6 +301,12 @@ rd.luks.options=timeout=0,discard
 root=/dev/mapper/crypt
 rootflags=x-systemd.device-timeout=0,subvol=@
 rw quiet splash bgrt_disable
+```
+
+##### Without Disk Encryption
+
+```zsh
+# /etc/cmdline.d/99-boot-options.conf
 
 # Without encryption
 
@@ -374,7 +414,7 @@ sudo localectl set-locale en_GB.UTF-8
 sudo systemctl enable --now fstrim.timer
 ```
 
-### Enable `systemd-boot-update.service` 
+### Enable `systemd-boot-update.service`
 
 ```zsh
 sudo systemctl enable --now systemd-boot-update.service
