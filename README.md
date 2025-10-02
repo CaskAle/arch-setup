@@ -273,8 +273,6 @@ bootctl install
 ```zsh
 # /etc/mkinitcpio.conf.d/99-mkinitcpio.conf
 
-MODULES=(i915)
-
 # sd-encrypt is only needed if doing disk encryption
 
 HOOKS=(base systemd autodetect microcode modconf kms keyboard block sd-encrypt filesystems fsck) 
@@ -282,7 +280,7 @@ HOOKS=(base systemd autodetect microcode modconf kms keyboard block sd-encrypt f
 
 #### Find the LUKS UUID for the encrypted device
 
-Determine the uuid for the encrypted device. Use the uuid for the device, not the root volume.
+Determine the uuid for the encrypted device (crypt). Use the uuid for the device, not the root volume.
 
 ```zsh
 lsblk -fp
@@ -710,30 +708,22 @@ SSH_AUTH_SOCK=$XDG_RUNTIME_DIR/ssh-agent.socket
 
 ### Intel video
 
-This section really needs consultation of the wiki, machine dependent.
+> **_Note:_** This section really needs consultation of the wiki, It is machine dependent.  
+https://wiki.archlinux.org/title/Intel_graphics
+https://wiki.archlinux.org/title/Hardware_video_acceleration
+https://wiki.archlinux.org/title/Vulkan
 
 ```zsh
-yay -S --needed  vulkan-intel
-yay -S --needed libva-intel-driver (Hardware Video Acceleration)
-yay -S vulcan-intel intel-media-driver (Explicit)
+yay -S --needed vulkan-icd-loader vulcan-intel
+yay -S --needed intel-media-driver
 ```
-
-#### Create or copy `/etc/modprobe.d/intel.conf`
 
 ### KDE/Plasma
-
-#### Install plasma-meta
-
-```zsh
-yay -S --needed plasma-meta
-```
-
-#### Now install the kde applications
 
 ```zsh
 yay -S --needed kde-graphics-meta kde-system-meta kde-utilities-meta \
                 dolphin-plugins ffmpegthumbs kdenetwork-filesharing \
-                kio-gdrive kio-zeroconf kompare
+                kio-gdrive kio-zeroconf kompare plasma-meta
 ```
 
 Enable sddm service
