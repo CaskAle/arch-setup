@@ -530,16 +530,19 @@ makepkg -si
 #### Install the code
 
 ```zsh
-yay -S --needed zsh-autocomplete zsh-autosuggestions zsh-completions zsh-history-substring-search zsh-syntax-highlighting
+yay -S --needed zsh-autocomplete zsh-autosuggestions zsh-completions \
+                zsh-history-substring-search zsh-syntax-highlighting
 yay -S --needed ttf-hack-nerd
 yay -S --needed starship
 ```
 
+Make sure that `eval "$(starship init zsh)"` is in the .zshrc and/or .bashrc file(s).
+
 #### Ensure that root and troy use zsh shell
 
 ```zsh
-sudo chsh root -s /bin/zsh
-chsh -s /bin/zsh
+sudo chsh root -s /usr/bin/zsh
+chsh -s /usr/bin/zsh
 ```
 
 #### Configure .zshrc
@@ -634,7 +637,6 @@ source /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 
 # zsh-syntax-highlighting (MUST BE LAST)
 source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
-
 ```
 
 #### Move `~/.zshrc` to `/etc/zsh/`
@@ -692,9 +694,10 @@ SSH_AUTH_SOCK=${XDG_RUNTIME_DIR}/ssh-agent.socket
 #### Enable storing of ssh key passwords in ssh-agent
 
 ```zsh
-# As a user, not root
-sudo systemctl --user enable --now ssh-agent.service
+systemctl --user enable --now ssh-agent.service
 ```
+
+>**_Note:_** Be sure to do this as a user, not root (No sudo)
 
 #### Create ssh related environment variables for kde
 
@@ -708,15 +711,15 @@ SSH_AUTH_SOCK=$XDG_RUNTIME_DIR/ssh-agent.socket
 
 ### Intel video
 
-> **_Note:_** This section really needs consultation of the wiki, It is machine dependent.  
-https://wiki.archlinux.org/title/Intel_graphics  
-https://wiki.archlinux.org/title/Hardware_video_acceleration  
-https://wiki.archlinux.org/title/Vulkan
-
 ```zsh
 yay -S --needed vulkan-icd-loader vulcan-intel
 yay -S --needed intel-media-driver
 ```
+
+> **_Note:_** This section really needs consultation of the wiki, It is machine dependent.  
+<https://wiki.archlinux.org/title/Intel_graphics>  
+<https://wiki.archlinux.org/title/Hardware_video_acceleration>  
+<https://wiki.archlinux.org/title/Vulkan>
 
 ### KDE/Plasma
 
