@@ -709,8 +709,8 @@ SSH_AUTH_SOCK=$XDG_RUNTIME_DIR/ssh-agent.socket
 ### Intel video
 
 > **_Note:_** This section really needs consultation of the wiki, It is machine dependent.  
-https://wiki.archlinux.org/title/Intel_graphics
-https://wiki.archlinux.org/title/Hardware_video_acceleration
+https://wiki.archlinux.org/title/Intel_graphics  
+https://wiki.archlinux.org/title/Hardware_video_acceleration  
 https://wiki.archlinux.org/title/Vulkan
 
 ```zsh
