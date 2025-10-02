@@ -179,21 +179,21 @@ mount -o compress=zstd /dev/mapper/crypt /mnt
 Skip this section if you do not want to create btrfs subvolumes.
 
 ```zsh
-btrfs subvolume create /mnt/@
-btrfs subvolume create /mnt/@home
+btrfs subvolume create /mnt/root
+btrfs subvolume create /mnt/home
 umount /mnt
 ```
 
 Re-mount without disk encryption
 
 ```zsh
-mount -o compress=zstd,subvol=@ /dev/nvme0n1p2 /mnt
+mount -o compress=zstd,subvol=root /dev/nvme0n1p2 /mnt
 ```
 
 Re-mount with disk encryption
 
 ```zsh
-mount -o compress=zstd,subvol=@ /dev/mapper/crypt /mnt
+mount -o compress=zstd,subvol=root /dev/mapper/crypt /mnt
 ```
 
 #### The home partition
@@ -205,13 +205,13 @@ mkdir -p /mnt/home
 No Encryption
 
 ```zsh
-mount -o compress=zstd,subvol=@home /dev/nvme0n1p2 /mnt/home
+mount -o compress=zstd,subvol=home /dev/nvme0n1p2 /mnt/home
 ```
 
 With Encryption
 
 ```zsh
-mount -o compress=zstd,subvol=@home /dev/mapper/crypt /mnt/home
+mount -o compress=zstd,subvol=home /dev/mapper/crypt /mnt/home
 ```
 
 #### The efi partition
@@ -226,10 +226,10 @@ mount -o defaults,fmask=0077,dmask=0077 /dev/nvme0n1p1 /mnt/efi
 ### Install the actual software
 
 ```zsh
-pacstrap -K /mnt base base-devel btrfs-progs fwupd git \
-intel-ucode iw iwd linux-firmware linux-zen linux-zen-headers \
-man-db man-pages micro networkmanager openssh plocate python \
-reflector sof-firmware udisks2
+pacstrap -K /mnt ansible base base-devel btrfs-progs fwupd git intel-ucode iw iwd \
+                 linux-firmware linux-zen linux-zen-headers man-db man-pages micro \
+                 networkmanager openssh plocate python reflector sof-firmware udisks2 \
+                 zram-generator zsh
 ```
 
 ### Create the `/etc/fstab` file
@@ -302,8 +302,8 @@ This file contains the boot otions used to create the Unified Kernel Image (UKI)
 rd.luks.name="luks-uuid"=crypt
 rd.luks.options=timeout=0,discard
 root=/dev/mapper/crypt
-rootflags=x-systemd.device-timeout=0,subvol=@
-rw quiet splash bgrt_disable
+rootflags=x-systemd.device-timeout=0,subvol=root
+rw quiet splash bgrt_disable zswap.enabled=0
 ```
 
 ##### Without Disk Encryption
@@ -314,8 +314,8 @@ rw quiet splash bgrt_disable
 # Without encryption
 
 root=/dev/nvme0n1p2
-rootflags=subvol=@
-rw quiet splash bgrt_disable
+rootflags=subvol=root
+rw quiet splash bgrt_disable zswap.enabled=0
 ```
 
 #### Re-build initial RAM filesystem
@@ -475,7 +475,7 @@ sudo systemctl enable --now reflector.timer
 
 ```zsh
 #Color
-#ParallelDownloads = 5`
+#ParallelDownloads = 5
 #[core-testing]
 #[extra-testing]
 ```
@@ -533,9 +533,7 @@ makepkg -si
 
 ```zsh
 yay -S --needed zsh-autocomplete zsh-autosuggestions zsh-completions zsh-history-substring-search zsh-syntax-highlighting
-
-yay -S --needed ttf-firacode-nerd
-
+yay -S --needed ttf-hack-nerd
 yay -S --needed starship
 ```
 
@@ -641,10 +639,10 @@ source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zs
 
 ```
 
-#### Copy `~/.zshrc` to `/etc/zsh/`
+#### Move `~/.zshrc` to `/etc/zsh/`
 
 ```zsh
-sudo cp /home/troy/.zshrc /etc/zsh/zshrc
+sudo mv /home/troy/.zshrc /etc/zsh/zshrc
 ```
 
 ### Enable bluetooth
@@ -724,20 +722,18 @@ yay -S vulcan-intel intel-media-driver (Explicit)
 
 ### KDE/Plasma
 
-#### Install plasma group
-
-> Some issues existed around this group from kde_unstable.  Lots did not get installed
+#### Install plasma-meta
 
 ```zsh
-yay -S --needed plasma
+yay -S --needed plasma-meta
 ```
 
 #### Now install the kde applications
 
 ```zsh
-yay -S --needed ark dolphin dolphin-plugins gwenview kate kdialog kfind khelpcenter konsole kwalletmanager kaccounts-providers kcolorchooser kcron kgpg kjournald kio-gdrive kompare ksystemlog kweather markdownpart okular
-
-yay -S --needed --asdeps ffmpegthumbs kdegraphics-thumbnailers keditbookmarks kio-admin poppler-data purpose
+yay -S --needed kde-graphics-meta kde-system-meta kde-utilities-meta \
+                dolphin-plugins ffmpegthumbs kdenetwork-filesharing \
+                kio-gdrive kio-zeroconf kompare
 ```
 
 Enable sddm service
@@ -751,9 +747,6 @@ sudo systemctl enable --now sddm.service
 ### Firmware updates
 
 ```zsh
-yay -S --needed fwupd
-yay -S --needed --asdeps udisks2
-
 sudo fwupdmgr get-updates
 ```
 
@@ -762,6 +755,9 @@ sudo fwupdmgr get-updates
 - Synology Drive
 - LibreOffice
 - Signal
+- Discord
+- Element
+- Firefox
 
 ### Cockpit
 
