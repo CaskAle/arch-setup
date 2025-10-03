@@ -4,18 +4,25 @@ This guide will provide a minimal install of Archlinux.  It provides relevant li
 
 ## Initial Setup
 
-### Prepare and boot the install media
+### Prepare the install media
 
 If needed, create an EFI USB install device. The official images can be downloaded from <https://archlinux.org/download>.  Once downloaded, there are many tools to create a bootable USB disk from the downloaded image.  This guide prefers the **dd** utility.  The following example will demonstrate:
 
+#### Download
+
 ```zsh
-# Download the image.
 wget https://dfw.mirror.rackspace.com/archlinux/iso/YYYY.MM.DD/archlinux-YYYY.MM.DD-x86_64.iso
+```
 
-# List devices for image copy.
+#### List devices for image copy
+
+```zsh
 lsblk -fp
+```
 
-#Create the install media.
+#### Create the install media
+
+```zsh
 sudo dd bs=16M if=archlinux-YYYY.MM.DD-x86_64.iso of=/dev/sda status=progress && sync
 ```
 
@@ -24,16 +31,17 @@ sudo dd bs=16M if=archlinux-YYYY.MM.DD-x86_64.iso of=/dev/sda status=progress &&
 - The **dd** command is very powerful and will overwrite whatever destination (of) that is given.  Be very careful and double check your typing.
 - For VM install, skip the creation of USB disk and install direct from ISO.
 
+### Boot the install media
+
 Now that you have an installation media, simply boot your computer from the this media.  Pressing the **F12** key during the initial boot splash screen typically brings up the system boot menu and you can select the installation media from there.
 
-### Make the terminal usable
+#### Make a hidpi terminal usable
 
 ```zsh
-# If you need a larger font due to High DPI.
 fbcon=font:TER132b
 ```
 
-### Make sure that the system is in uefi mode  
+#### Make sure that the system is in uefi mode  
 
 If this command returns 64 or 32 then you are in UEFI.
 
@@ -41,24 +49,37 @@ If this command returns 64 or 32 then you are in UEFI.
 cat /sys/firmware/efi/fw_platform_size 
 ```
 
-### Get a network connection
+#### Get a network connection
 
 If using wired ethernet you should should connect automatically.  If you need a WiFI connection, use the following:
 
+#### List WiFi devices
+
 ```zsh
-# List WiFi devices
 iwctl device list
+```
 
-# Scan for networks on the appropriate device (no output)
+#### Scan for networks on the appropriate device (no output)
+
+```zsh
 iwctl station <device> scan
+```
 
-# List the networks (SSIDs) on the device
+#### List the networks (SSIDs) on the device
+
+```zsh
 iwctl station <device> get-networks
+```
 
-# Connect to a network
+#### Connect to a network
+
+```zsh
 iwctl station <device> connect <SSID>
+```
 
-# Verify a connection
+#### Verify a connection
+
+```zsh
 ping archlinux.org
 ```
 
@@ -228,7 +249,7 @@ mount -o defaults,fmask=0077,dmask=0077 /dev/nvme0n1p1 /mnt/efi
 ```zsh
 pacstrap -K /mnt ansible base base-devel btrfs-progs fwupd git intel-ucode iw iwd \
                  linux-firmware linux-zen linux-zen-headers man-db man-pages micro \
-                 networkmanager openssh plocate python reflector sof-firmware udisks2 \
+                 networkmanager openssh plocate python reflector sof-firmware \
                  zram-generator zsh
 ```
 
@@ -376,7 +397,6 @@ exit
 umount /mnt/boot
 umount /mnt/home
 umount /mnt
-
 reboot
 ```
 
@@ -432,6 +452,12 @@ sudo systemctl enable --now systemd-resolved.service
 
 ### Configure Networking (iwd and NetworkManager)
 
+#### Install
+
+```zsh
+sudo pacman -S --needed iwd networkmanager
+```
+
 #### Create the `/etc/NetworkManager/conf.d/iwd_backend.conf` file
 
 ```zsh
@@ -454,6 +480,12 @@ sudo nmtui
 ```
 
 ### Reflector will build a customized mirrorlist
+
+#### Install Reflector
+
+```zsh
+sudo pacman -S --needed reflector
+```
 
 #### Edit the `/etc/xdg/reflector/reflector.conf` file
 
@@ -501,9 +533,10 @@ sudo pacman -Syyu
 
 ### Configure git
 
-#### Install git zsh completions
+#### Install git
 
 ```zsh
+sudo pacman -S --needed git
 sudo pacman -S --needed --asdeps git-zsh-completion
 ```
 
@@ -527,16 +560,20 @@ makepkg -si
 
 ### Configure zsh Shell and starship prompt
 
-#### Install the code
+#### Install zsh and plugins
 
 ```zsh
-yay -S --needed zsh-autocomplete zsh-autosuggestions zsh-completions \
+yay -S --needed zsh zsh-autocomplete zsh-autosuggestions zsh-completions \
                 zsh-history-substring-search zsh-syntax-highlighting
 yay -S --needed ttf-hack-nerd
 yay -S --needed starship
 ```
 
-Make sure that `eval "$(starship init zsh)"` is in the .zshrc and/or .bashrc file(s).
+#### Source starship in .zshrc file
+
+```zsh
+eval "$(starship init zsh)"
+```
 
 #### Ensure that root and troy use zsh shell
 
@@ -645,14 +682,20 @@ source /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zs
 sudo mv /home/troy/.zshrc /etc/zsh/zshrc
 ```
 
-### Enable bluetooth
+### Bluetooth
 
 ```zsh
 yay -S --needed bluez
 sudo systemctl enable --now bluetooth
 ```
 
-### SSH
+### OpenSSH
+
+#### Install openssh
+
+```zsh
+yay -S --needed openssh
+```
 
 #### Edit `~/.zshrc` & `~/.bashrc` and add
 
@@ -697,7 +740,7 @@ SSH_AUTH_SOCK=${XDG_RUNTIME_DIR}/ssh-agent.socket
 systemctl --user enable --now ssh-agent.service
 ```
 
->**_Note:_** Be sure to do this as a user, not root (No sudo)
+>**_Note:_** Be sure to do this as a user, not root (no sudo)
 
 #### Create ssh related environment variables for kde
 
@@ -712,8 +755,7 @@ SSH_AUTH_SOCK=$XDG_RUNTIME_DIR/ssh-agent.socket
 ### Intel video
 
 ```zsh
-yay -S --needed vulkan-icd-loader vulcan-intel
-yay -S --needed intel-media-driver
+yay -S --needed vulkan-icd-loader vulkan-intel intel-media-driver
 ```
 
 > **_Note:_** This section really needs consultation of the wiki, It is machine dependent.  
@@ -740,6 +782,8 @@ sudo systemctl enable --now sddm.service
 ### Firmware updates
 
 ```zsh
+yay -S --needed fwupd
+yay -S --asdeps udisks2
 sudo fwupdmgr get-updates
 ```
 
@@ -754,11 +798,12 @@ sudo fwupdmgr get-updates
 
 ### Cockpit
 
-#### Install cockpit and plugins
+#### Install cockpit
 
 ```zsh
 yay -S --needed cockpit
-yay -S --needed --asdeps cockpit-storaged cockpit-packagekit cockpit-podman cockpit-machines
+yay -S --needed --asdeps cockpit-storaged cockpit-packagekit \
+                         cockpit-podman cockpit-machines
 ```
 
 #### Copy the wildcard certificate to `\etc\cockpit\ws=certs.d\`
@@ -776,14 +821,14 @@ sudo systemctl enable --now cockpit.socket
 
 ### Printing and Scanning
 
-#### First, install and enable the software
+#### Install and enable cups
 
 ```zsh
 yay -S --needed cups
 sudo systemctl enable --now cups.socket
 ```
 
-#### Then, create a printer config
+#### Create a printer config
 
 1. Load the website `localhost:631` and sign in as a user with admin rights
 1. Select `Add Printer` from the `Administration` tab
@@ -794,10 +839,12 @@ sudo systemctl enable --now cups.socket
 
 ```zsh
 yay -S --asdeps tuned-ppd
+```
 
-# or
+or
 
-yay -S --asdeps power-profiles-daemon
+```zsh
+yay -S --needed --asdeps power-profiles-daemon
 ```
 
 ### KVM/Qemu/Libvirt
