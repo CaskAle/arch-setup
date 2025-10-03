@@ -247,9 +247,9 @@ mount -o defaults,fmask=0077,dmask=0077 /dev/nvme0n1p1 /mnt/efi
 ### Install the actual software
 
 ```zsh
-pacstrap -K /mnt ansible base base-devel btrfs-progs fwupd git intel-ucode iw iwd \
-                 linux-firmware linux-zen linux-zen-headers man-db man-pages micro \
-                 networkmanager openssh plocate python reflector sof-firmware \
+pacstrap -K /mnt ansible base base-devel btop btrfs-progs fwupd git intel-ucode \
+                 iw iwd linux-firmware linux-zen linux-zen-headers man-db man-pages \
+                 micro networkmanager openssh plocate python reflector sof-firmware \
                  zram-generator zsh
 ```
 
@@ -777,8 +777,6 @@ Enable sddm service
 sudo systemctl enable --now sddm.service
 ```
 
-## Other Stuff
-
 ### Firmware updates
 
 ```zsh
@@ -839,35 +837,45 @@ sudo systemctl enable --now cups.socket
 
 ```zsh
 yay -S --asdeps tuned-ppd
-```
-
-or
-
-```zsh
-yay -S --needed --asdeps power-profiles-daemon
+sudo systemctl enable --now tuned
 ```
 
 ### KVM/Qemu/Libvirt
 
+#### Install and enable
+
 ```zsh
-yay -S --needed libvirt qemu-desktop virt-manager virt-install edk2-ovmf dnsmasq swtpm virt-viewer
-
-yay -S --needed bridge-utils for bridged networking.
-
+yay -S --needed libvirt qemu-desktop virt-manager
+yay -S --needed --asdeps dnsmasq swtpm virt-viewer
 sudo systemctl enable --now libvirtd.socket
 ```
 
-Enable nested virtualisation via /etc/modprobe.d/kvm.conf.  Create or copy.
+#### Enable IOMMU
 
-`options kvm_intel nested=1*`
+Edit the file: `/etc/cmdline.d/99-boot-options.conf` to add the following as a kernel parameter
 
-Video card needs extra ram configured in guest to get full resolution.
-Under Video QXL ensure xml looks like:
+```zsh
+intel_iommu=on
+```
 
-ram="65536" vram="65536" vgamem=\"65536\"
+#### Rebuild initramfs
 
-<https://wiki.archlinux.org/index.php/Libvirt>
-<https://wiki.archlinux.org/index.php/Libvirt#UEFI_Support>
+```zsh
+sudo mkinitcpio -P
+```
+
+#### Maybe ?
+
+```zsh
+yay -S --needed bridge-utils
+```
+
+#### Video card needs extra ram configured in guest to get full resolution
+
+- Under Video QXL ensure xml looks like:  
+   ram="65536" vram="65536" vgamem=\"65536\"
+
+#### File Sharing
 
 For file sharing with virtio-fs:
 <https://libvirt.org/kbase/virtiofs.html>
