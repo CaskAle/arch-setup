@@ -850,6 +850,12 @@ yay -S --needed --asdeps dnsmasq swtpm virt-viewer
 sudo systemctl enable --now libvirtd.socket
 ```
 
+#### Add user to libvirt group
+
+```zsh
+sudo usermod -aG libvirt troy
+```
+
 #### Enable IOMMU
 
 Edit the file: `/etc/cmdline.d/99-boot-options.conf` to add the following as a kernel parameter
@@ -873,7 +879,7 @@ yay -S --needed bridge-utils
 #### Video card needs extra ram configured in guest to get full resolution
 
 - Under Video QXL ensure xml looks like:  
-   ram="65536" vram="65536" vgamem=\"65536\"
+   `ram="131072" vram="65536" vgamem="65536"`
 
 #### File Sharing
 
